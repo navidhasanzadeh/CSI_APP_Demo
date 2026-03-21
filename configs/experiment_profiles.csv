@@ -1,0 +1,6 @@
+profile_name,beginning_baseline_recording,between_actions_baseline_recording,ending_baseline_recording,stop_time,preview_pause,action_time,each_action_repitition_times,save_location
+default_experiment,15.0,10.0,20.0,6.0,2.0,4.0,20,./experiments/
+experiment_profile,15.0,20.0,20.0,6.0,2.0,4.0,10,./experiments/
+Location_Sensitivity,15.0,20.0,20.0,6.0,2.0,4.0,3,./experiments/
+Diverse_Locations,10.0,5.0,10.0,6.0,2.0,4.0,4,./experiments/
+experiment_profile_copy,10.0,10.0,10.0,6.0,2.0,4.0,5,./experiments/

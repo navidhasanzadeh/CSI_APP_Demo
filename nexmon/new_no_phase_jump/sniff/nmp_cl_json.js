@@ -1,0 +1,1 @@
+{"00:BE:43:BC:8B:8A":{"type":0,"mac":"00:BE:43:BC:8B:8A","name":"ubuntu","vendor":""},"7C:B5:66:A9:0E:93":{"type":0,"mac":"7C:B5:66:A9:0E:93","name":"ubuntu","vendor":""},"2C:CF:67:32:07:77":{"type":0,"mac":"2C:CF:67:32:07:77","name":"raspberrypi5","vendor":""}}

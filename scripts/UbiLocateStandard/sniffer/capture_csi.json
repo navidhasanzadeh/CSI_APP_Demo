@@ -1,0 +1,44 @@
+[
+  {
+    "label": "ensure_remote_dir",
+    "description": "Create remote directory for capture files",
+    "order": 1,
+    "command": "mkdir -p {remote_directory}",
+    "sleep": 0
+  },
+  {
+    "label": "delete_previous",
+    "description": "Remove previous pcap files",
+    "order": 2,
+    "command": "rm -f {remote_directory}/*.pcap",
+    "sleep": 1,
+    "when": "delete_prev_pcap"
+  },
+  {
+    "label": "prime_csi",
+    "description": "Prime CSI capture parameters",
+    "order": 3,
+    "command": "cd /jffs/csisoftware/; /jffs/csisoftware/nexutil -I {interface} -s526 -i -l4 -v1",
+    "sleep": 0
+  },
+  {
+    "label": "start_tcpdump",
+    "description": "Start tcpdump CSI capture",
+    "order": 4,
+    "command": "nohup /jffs/csisoftware/tcpdump -i {interface} -nn -s 0 -w {full_remote_path} port 5500 > /dev/null 2>&1 &",
+    "sleep": 0
+  },
+  {
+    "label": "wait_capture",
+    "description": "Wait for capture duration",
+    "order": 5,
+    "sleep": "{capture_duration}"
+  },
+  {
+    "label": "stop_tcpdump",
+    "description": "Terminate tcpdump capture",
+    "order": 6,
+    "command": "killall tcpdump",
+    "sleep": 0
+  }
+]

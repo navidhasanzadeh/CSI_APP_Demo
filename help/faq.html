@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FAQ</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.5; padding: 12px; }
+    h1, h2 { color: #1f3b6d; }
+  </style>
+</head>
+<body>
+  <h1>FAQ</h1>
+  <h2>Why are my plots empty?</h2>
+  <p>
+    Ensure you selected the correct experiment folder and action, and confirm that
+    the PCAP files were captured for that action. If packet counts are zero, re-check
+    the Wi-Fi profile settings.
+  </p>
+  <h2>Why does the CSI array have fewer dimensions than expected?</h2>
+  <p>
+    1SS captures do not include the Tx axis. The CSI tensor becomes
+    <code>[time, subcarrier, rx]</code> instead of <code>[time, subcarrier, rx, tx]</code>.
+  </p>
+  <h2>Why is the depth camera feed missing?</h2>
+  <p>
+    The depth camera requires a local webserver for streaming. Verify that the server
+    is running, the configured URL is reachable, and (on macOS) that the D455 is visible
+    inside the VM hosting the RealSense drivers.
+  </p>
+  <h2>Why are voice prompts not playing?</h2>
+  <p>
+    Confirm that the voice profile has spoken prompts enabled and that gTTS plus audio
+    playback are installed and accessible on your system.
+  </p>
+  <h2>Why do I see time drift between sessions?</h2>
+  <p>
+    Re-sync the time profile before starting a new experiment and verify the configured
+    time server is reachable from the host machine.
+  </p>
+</body>
+</html>

@@ -1,0 +1,40 @@
+[
+  {
+    "label": "interface_up",
+    "description": "Bring interface up via wl",
+    "order": 1,
+    "command": "cd /jffs; /usr/sbin/wl -i {interface} up",
+    "sleep": 1
+  },
+  {
+    "label": "ifconfig_up",
+    "description": "Bring interface up via ifconfig",
+    "order": 2,
+    "command": "cd /jffs; /sbin/ifconfig {interface} up",
+    "sleep": 1
+  },
+  {
+    "label": "mcp_setup",
+    "description": "Configure MCP for channel capture",
+    "order": 3,
+    "command": "cd /jffs; ./mcp -c {channel} -C {core} -N 1{mac_args}",
+    "sleep": 0,
+    "store_output_as": "mcp_code"
+  },
+  {
+    "label": "nexutil_apply",
+    "description": "Apply nexutil configuration for CSI capture",
+    "order": 4,
+    "command": "cd /jffs; ./nexutil -I{interface} -s500 -b -l34 -v{mcp_code}",
+    "sleep": 1,
+    "when": "mcp_code"
+  },
+  {
+    "label": "enable_monitor",
+    "description": "Enable monitor mode on interface",
+    "order": 5,
+    "command": "cd /jffs; /usr/sbin/wl -i {interface} monitor 1",
+    "sleep": 1,
+    "when": "mcp_code"
+  }
+]

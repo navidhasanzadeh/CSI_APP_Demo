@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Depth Camera (Intel RealSense D455)</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.5; padding: 12px; }
+    h1, h2, h3 { color: #1f3b6d; }
+    code { background: #f4f4f4; padding: 0 4px; }
+  </style>
+</head>
+<body>
+  <h1>Depth Camera (Intel RealSense D455)</h1>
+  <p>
+    The depth camera integration lets you capture synchronized RGB + depth streams
+    alongside CSI. The UI communicates with a local REST API provided by the D455
+    capture service and stores recordings per experiment action.
+  </p>
+
+  <h2>What the depth camera workflow provides</h2>
+  <ul>
+    <li><strong>RGB + depth video</strong> captured per action window.</li>
+    <li><strong>Depth timestamps</strong> that align with experiment actions.</li>
+    <li><strong>Optional raw depth storage</strong> (NPZ) for offline processing.</li>
+  </ul>
+
+  <h2>Prerequisites</h2>
+  <ul>
+    <li><strong>Hardware:</strong> Intel RealSense D455 connected over USB.</li>
+    <li><strong>Depth API service:</strong> the D455 capture service running locally or on a VM.
+      The UI polls its status endpoint and posts capture requests.</li>
+    <li><strong>Network access:</strong> the API host must be reachable from the collection app.</li>
+  </ul>
+
+  <h2>Configuration in the app</h2>
+  <ol>
+    <li>Open the <strong>Depth Camera</strong> tab in the Configuration window.</li>
+    <li>Select or create a depth camera profile.</li>
+    <li>Enable <strong>Depth camera</strong> to activate status polling.</li>
+    <li>Set the <strong>API IP / host</strong> to the address where the D455 service runs.
+      Include a port if it is non-default (for example, <code>10.211.55.8:5000</code>).</li>
+    <li>Choose FPS and RGB/depth resolutions that match your capture needs.</li>
+    <li>Enable <strong>Save raw NPZ files</strong> if you want per-frame depth matrices.
+      Use <strong>Save location</strong> to override the default recordings path.</li>
+  </ol>
+
+  <h2>Recommended capture workflow</h2>
+  <ol>
+    <li>Start the D455 capture service and verify its status endpoint responds.</li>
+    <li>In the app, click <strong>Refresh now</strong> to confirm the status summary.</li>
+    <li>Run the experiment as usual; depth capture starts automatically for each action.</li>
+    <li>After the session, check the recordings folder for RGB video, depth video,
+      and timestamp CSV files.</li>
+  </ol>
+
+  <h2>Platform notes</h2>
+  <h3>Windows / Linux</h3>
+  <p>
+    Install Intel RealSense drivers and run the provided depth camera service.
+    Ensure the API host and port are reachable from the UI machine.
+  </p>
+
+  <h3>macOS</h3>
+  <p>
+    RealSense drivers are not supported directly on macOS. Use a Windows or Linux VM
+    that has USB passthrough for the D455. Run the capture service inside the VM and
+    expose the API port to the host (for example using Parallels or VMware port
+    forwarding).
+  </p>
+
+  <h2>Troubleshooting checklist</h2>
+  <ul>
+    <li><strong>Status says disabled:</strong> confirm the depth camera checkbox is enabled.</li>
+    <li><strong>Status error or timeout:</strong> verify the API IP/host and port, and check
+      that firewalls or VM NAT settings allow access.</li>
+    <li><strong>Blank recordings:</strong> confirm the D455 is detected by the service and that
+      RGB/depth resolutions are supported by the device.</li>
+    <li><strong>Large files:</strong> reduce FPS or choose a lower resolution before recording.</li>
+    <li><strong>Raw NPZ storage missing:</strong> ensure <strong>Save raw NPZ files</strong> is enabled
+      and the save directory exists.</li>
+  </ul>
+</body>
+</html>

@@ -1,0 +1,100 @@
+[
+  {
+    "label": "interface_up",
+    "description": "Bring interface up via wl",
+    "order": 1,
+    "command": "/usr/sbin/wl -i {interface} up",
+    "sleep": 0
+  },
+  {
+    "label": "radio_on",
+    "description": "Enable radio",
+    "order": 2,
+    "command": "/usr/sbin/wl -i {interface} radio on",
+    "sleep": 0
+  },
+  {
+    "label": "set_country",
+    "description": "Set country code",
+    "order": 3,
+    "command": "/usr/sbin/wl -i {interface} country UG",
+    "sleep": 0
+  },
+  {
+    "label": "set_channel",
+    "description": "Configure chanspec",
+    "order": 4,
+    "command": "/usr/sbin/wl -i {interface} chanspec {channel}",
+    "sleep": 0
+  },
+  {
+    "label": "enable_monitor",
+    "description": "Enable monitor mode",
+    "order": 5,
+    "command": "/usr/sbin/wl -i {interface} monitor 1",
+    "sleep": 0
+  },
+  {
+    "label": "ifconfig_up",
+    "description": "Bring interface up via ifconfig",
+    "order": 6,
+    "command": "/sbin/ifconfig {interface} up",
+    "sleep": 0
+  },
+  {
+    "label": "make_csi_params",
+    "description": "Generate CSI parameters",
+    "order": 7,
+    "command": "cd /jffs/csisoftware; /jffs/csisoftware/makecsiparams -e 1 -m 00:12:34:56:78:9b -c 0xe27a -C 0xf -N 0x1 -d 0x50 -b 0x88",
+    "sleep": 0
+  },
+  {
+    "label": "apply_nexutil_base",
+    "description": "Apply nexutil configuration",
+    "order": 8,
+    "command": "cd /jffs/send_periodically/; /jffs/send_periodically/nexutil -I {interface} -s500 -b -l34 -veuIBHwGIAQAAEjRWeJsAAAAAAAAAAAAAAAAAAAAAAABQAA==",
+    "sleep": 0
+  },
+  {
+    "label": "set_shmem_172a",
+    "description": "Configure shared memory 0x172a",
+    "order": 9,
+    "command": "/usr/sbin/wl -i {interface} shmem 0x172a 2",
+    "sleep": 0
+  },
+  {
+    "label": "set_shmem_172c",
+    "description": "Configure shared memory 0x172c",
+    "order": 10,
+    "command": "/usr/sbin/wl -i {interface} shmem 0x172c 0",
+    "sleep": 0
+  },
+  {
+    "label": "txcore_config",
+    "description": "Configure txcore",
+    "order": 11,
+    "command": "/usr/sbin/wl -i  {interface} chanspec {channel}",
+    "sleep": 0
+  },
+  {
+    "label": "set_shmem_172a",
+    "description": "Configure shared memory 0x172a",
+    "order": 12,
+    "command": "/usr/sbin/wl -i {interface} shmem 0x172a 2",
+    "sleep": 0
+  },
+  {
+    "label": "set_shmem_172c",
+    "description": "Configure shared memory 0x172c",
+    "order": 13,
+    "command": "/usr/sbin/wl -i {interface} shmem 0x172c 0",
+    "sleep": 0
+  },
+  {
+    "label": "txcore_config",
+    "description": "Configure txcore",
+    "order": 14,
+    "command": "/usr/sbin/wl -i  {interface} chanspec {channel}",
+    "sleep": 0
+  }
+]

@@ -1,0 +1,31 @@
+[
+  {
+    "label": "set_tx_power_wl0",
+    "description": "Set transmit power for wl0",
+    "order": 1,
+    "command": "nvram set wl0_txpower={value}",
+    "sleep": 1
+  },
+  {
+    "label": "set_tx_power_wl1",
+    "description": "Set transmit power for wl1",
+    "order": 2,
+    "command": "nvram set wl1_txpower={value}",
+    "sleep": 1
+  },
+  {
+    "label": "commit_power",
+    "description": "Commit transmit power changes",
+    "order": 3,
+    "command": "nvram commit",
+    "sleep": 1
+  },
+  {
+    "label": "reboot_router",
+    "description": "Reboot router to apply transmit power changes",
+    "order": 4,
+    "command": "reboot",
+    "sleep": 3,
+    "when": "reboot"
+  }
+]

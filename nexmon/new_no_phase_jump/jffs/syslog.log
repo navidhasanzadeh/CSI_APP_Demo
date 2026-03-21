@@ -1,0 +1,442 @@
+Oct 27 04:17:06 kernel: CONSOLE: 031145.661 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:06 kernel: CONSOLE: 031145.661 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:07 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:07 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:07 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:07 kernel: CONSOLE: 031146.708 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:07 kernel: CONSOLE: 031146.708 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:08 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:08 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:08 kernel: CONSOLE: 031147.754 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:08 kernel: CONSOLE: 031147.754 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:09 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:09 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:09 kernel: CONSOLE: 031148.801 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:09 kernel: CONSOLE: 031148.801 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:10 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:10 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:10 kernel: CONSOLE: 031149.847 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:10 kernel: CONSOLE: 031149.847 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:10 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:17:10 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:17:11 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:11 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:11 kernel: CONSOLE: 031150.894 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:11 kernel: CONSOLE: 031150.894 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:12 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:12 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:12 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:12 kernel: CONSOLE: 031151.940 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:12 kernel: CONSOLE: 031151.940 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:13 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:13 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:13 kernel: CONSOLE: 031152.976 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:13 kernel: CONSOLE: 031152.976 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:14 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:14 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:14 kernel: CONSOLE: 031154.013 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:14 kernel: CONSOLE: 031154.013 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:15 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:15 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:15 kernel: CONSOLE: 031155.049 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:15 kernel: CONSOLE: 031155.049 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:15 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:17:15 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:17:16 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:16 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:16 kernel: CONSOLE: 031156.086 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:16 kernel: CONSOLE: 031156.086 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:17 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:17 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:17 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:17 kernel: CONSOLE: 031157.122 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:17 kernel: CONSOLE: 031157.122 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:18 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:18 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:18 kernel: CONSOLE: 031158.159 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:18 kernel: CONSOLE: 031158.159 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:19 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:19 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:20 kernel: CONSOLE: 031159.195 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:20 kernel: CONSOLE: 031159.195 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:20 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:20 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:21 kernel: CONSOLE: 031160.231 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:21 kernel: CONSOLE: 031160.231 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:21 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:17:21 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:17:21 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:21 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:22 kernel: CONSOLE: 031161.268 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:22 kernel: CONSOLE: 031161.268 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:22 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:22 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:22 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:23 kernel: CONSOLE: 031162.304 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:23 kernel: CONSOLE: 031162.304 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:23 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:24 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:24 kernel: CONSOLE: 031163.341 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:24 kernel: CONSOLE: 031163.341 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:25 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:25 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:25 kernel: CONSOLE: 031164.377 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:25 kernel: CONSOLE: 031164.377 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:26 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:26 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:26 kernel: CONSOLE: 031165.413 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:26 kernel: CONSOLE: 031165.413 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:26 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:17:26 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:17:27 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:27 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:27 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:27 kernel: CONSOLE: 031166.450 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:27 kernel: CONSOLE: 031166.450 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:28 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:28 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:28 kernel: CONSOLE: 031167.496 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:28 kernel: CONSOLE: 031167.496 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:29 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:29 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:29 kernel: CONSOLE: 031168.542 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:29 kernel: CONSOLE: 031168.542 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:30 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:30 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:30 kernel: CONSOLE: 031169.589 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:30 kernel: CONSOLE: 031169.589 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:31 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:17:31 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:17:31 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:31 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:31 kernel: CONSOLE: 031170.635 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:31 kernel: CONSOLE: 031170.635 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:32 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:32 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:32 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:32 kernel: CONSOLE: 031171.682 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:32 kernel: CONSOLE: 031171.682 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:33 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:33 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:33 kernel: CONSOLE: 031172.718 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:33 kernel: CONSOLE: 031172.718 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:34 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:34 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:34 kernel: CONSOLE: 031173.755 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:34 kernel: CONSOLE: 031173.755 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:35 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:35 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:35 kernel: CONSOLE: 031174.791 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:35 kernel: CONSOLE: 031174.791 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:36 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:17:36 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:17:36 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:36 kernel: CONSOLE: 031175.837 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:36 kernel: CONSOLE: 031175.837 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:36 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:37 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:37 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:37 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:37 kernel: CONSOLE: 031176.894 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:37 kernel: CONSOLE: 031176.894 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:38 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:38 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:38 kernel: CONSOLE: 031177.930 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:38 kernel: CONSOLE: 031177.930 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:39 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:39 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:39 kernel: CONSOLE: 031178.967 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:39 kernel: CONSOLE: 031178.967 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:40 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:40 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:40 kernel: CONSOLE: 031180.013 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:40 kernel: CONSOLE: 031180.013 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:41 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:17:41 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:17:41 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:41 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:41 kernel: CONSOLE: 031181.059 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:41 kernel: CONSOLE: 031181.059 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:42 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:42 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:42 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:42 kernel: CONSOLE: 031182.106 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:42 kernel: CONSOLE: 031182.106 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:43 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:43 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:43 kernel: CONSOLE: 031183.153 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:43 kernel: CONSOLE: 031183.153 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:44 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:44 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:44 kernel: CONSOLE: 031184.199 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:44 kernel: CONSOLE: 031184.199 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:45 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:45 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:46 kernel: CONSOLE: 031185.245 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:46 kernel: CONSOLE: 031185.245 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:46 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:17:46 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:17:46 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:46 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:47 kernel: CONSOLE: 031186.282 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:47 kernel: CONSOLE: 031186.282 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:47 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:47 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:47 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:48 kernel: CONSOLE: 031187.328 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:48 kernel: CONSOLE: 031187.328 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:48 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:48 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:49 kernel: CONSOLE: 031188.375 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:49 kernel: CONSOLE: 031188.375 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:49 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:49 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:50 kernel: CONSOLE: 031189.411 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:50 kernel: CONSOLE: 031189.411 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:50 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:50 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:51 kernel: CONSOLE: 031190.458 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:51 kernel: CONSOLE: 031190.458 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:51 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:17:51 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:17:51 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:52 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:52 kernel: CONSOLE: 031191.504 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:52 kernel: CONSOLE: 031191.504 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:52 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:53 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:53 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:53 kernel: CONSOLE: 031192.561 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:53 kernel: CONSOLE: 031192.561 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:54 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:54 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:54 kernel: CONSOLE: 031193.607 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:54 kernel: CONSOLE: 031193.607 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:55 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:55 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:55 kernel: CONSOLE: 031194.654 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:55 kernel: CONSOLE: 031194.654 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:56 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:56 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:56 kernel: CONSOLE: 031195.700 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:56 kernel: CONSOLE: 031195.700 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:56 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:17:56 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:17:57 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:57 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:57 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:57 kernel: CONSOLE: 031196.746 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:57 kernel: CONSOLE: 031196.746 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:58 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:58 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:58 kernel: CONSOLE: 031197.793 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:58 kernel: CONSOLE: 031197.793 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:17:59 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:17:59 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:17:59 kernel: CONSOLE: 031198.839 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:17:59 kernel: CONSOLE: 031198.839 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:00 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:00 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:00 kernel: CONSOLE: 031199.875 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:00 kernel: CONSOLE: 031199.875 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:01 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:01 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:01 kernel: CONSOLE: 031200.922 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:01 kernel: CONSOLE: 031200.922 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:01 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:18:01 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:18:02 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:02 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:02 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:02 kernel: CONSOLE: 031201.968 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:02 kernel: CONSOLE: 031201.968 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:03 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:03 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:03 kernel: CONSOLE: 031203.015 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:03 kernel: CONSOLE: 031203.015 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:04 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:04 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:04 kernel: CONSOLE: 031204.051 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:04 kernel: CONSOLE: 031204.051 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:05 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:05 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:05 kernel: CONSOLE: 031205.098 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:05 kernel: CONSOLE: 031205.098 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:06 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:06 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:06 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:18:06 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:18:06 kernel: CONSOLE: 031206.144 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:06 kernel: CONSOLE: 031206.144 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:07 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:07 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:07 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:07 kernel: CONSOLE: 031207.180 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:07 kernel: CONSOLE: 031207.180 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:08 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:08 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:08 kernel: CONSOLE: 031208.217 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:08 kernel: CONSOLE: 031208.217 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:09 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:09 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:09 kernel: CONSOLE: 031209.263 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:09 kernel: CONSOLE: 031209.263 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:10 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:10 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:10 kernel: CONSOLE: 031210.300 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:10 kernel: CONSOLE: 031210.300 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:11 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:11 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:11 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:18:11 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:18:11 kernel: CONSOLE: 031211.336 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:11 kernel: CONSOLE: 031211.336 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:12 kernel: eth4 (Ext switch port: 3) (Logical Port: 11) Link UP 1000 mbps full duplex
+Oct 27 04:18:12 kernel: <=== Deactivate Deep Green Mode
+Oct 27 04:18:12 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:12 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:12 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:12 kernel: CONSOLE: 031212.372 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:12 kernel: CONSOLE: 031212.372 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:13 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:13 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:13 kernel: CONSOLE: 031213.419 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:13 kernel: CONSOLE: 031213.419 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:14 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:14 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:14 kernel: CONSOLE: 031214.455 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:14 kernel: CONSOLE: 031214.455 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:15 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:15 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:16 kernel: CONSOLE: 031215.502 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:16 kernel: CONSOLE: 031215.502 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:16 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:18:16 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:18:16 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:16 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:17 kernel: CONSOLE: 031216.538 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:17 kernel: CONSOLE: 031216.538 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:17 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:17 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:17 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:18 kernel: CONSOLE: 031217.584 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:18 kernel: CONSOLE: 031217.584 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:18 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:18 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:19 kernel: CONSOLE: 031218.621 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:19 kernel: CONSOLE: 031218.621 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:19 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:19 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:20 kernel: CONSOLE: 031219.667 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:20 kernel: CONSOLE: 031219.667 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:21 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:21 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:21 kernel: CONSOLE: 031220.713 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:21 kernel: CONSOLE: 031220.713 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:21 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:18:21 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:18:22 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:22 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:22 kernel: CONSOLE: 031221.760 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:22 kernel: CONSOLE: 031221.760 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:22 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:23 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:23 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:23 kernel: CONSOLE: 031222.796 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:23 kernel: CONSOLE: 031222.796 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:24 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:24 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:24 kernel: CONSOLE: 031223.833 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:24 kernel: CONSOLE: 031223.833 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:25 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:25 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:25 kernel: CONSOLE: 031224.869 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:25 kernel: CONSOLE: 031224.869 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:26 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:26 kernel: CONSOLE: 031225.905 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:26 kernel: CONSOLE: 031225.905 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:26 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:27 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:18:27 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:18:27 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:27 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:27 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:27 kernel: CONSOLE: 031226.972 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:27 kernel: CONSOLE: 031226.972 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:28 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:28 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:28 kernel: CONSOLE: 031228.008 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:28 kernel: CONSOLE: 031228.008 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:29 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:29 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:29 kernel: CONSOLE: 031229.044 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:29 kernel: CONSOLE: 031229.044 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:30 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:30 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:30 kernel: CONSOLE: 031230.091 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:30 kernel: CONSOLE: 031230.091 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:31 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:31 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:31 kernel: CONSOLE: 031231.137 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:31 kernel: CONSOLE: 031231.137 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:32 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:18:32 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:18:32 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:32 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:32 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:32 kernel: CONSOLE: 031232.183 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:32 kernel: CONSOLE: 031232.183 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:33 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:33 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:33 kernel: CONSOLE: 031233.220 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:33 kernel: CONSOLE: 031233.220 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:34 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:34 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:34 kernel: CONSOLE: 031234.257 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:34 kernel: CONSOLE: 031234.257 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:35 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:35 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:35 kernel: CONSOLE: 031235.303 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:35 kernel: CONSOLE: 031235.303 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:36 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:36 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:36 kernel: CONSOLE: 031236.339 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:36 kernel: CONSOLE: 031236.339 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:37 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:18:37 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:18:37 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:37 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:37 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:37 kernel: CONSOLE: 031237.375 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:37 kernel: CONSOLE: 031237.375 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:38 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:38 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:38 kernel: CONSOLE: 031238.412 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:38 kernel: CONSOLE: 031238.412 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:39 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:39 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:39 kernel: CONSOLE: 031239.458 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:39 kernel: CONSOLE: 031239.458 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:40 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:40 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:40 kernel: CONSOLE: 031240.505 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:40 kernel: CONSOLE: 031240.505 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:41 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:41 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:41 kernel: CONSOLE: 031241.551 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:41 kernel: CONSOLE: 031241.551 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:42 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:18:42 kernel: dhd_prot_ioctl: status ret value is -17 
+Oct 27 04:18:42 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:42 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:42 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:42 kernel: CONSOLE: 031242.587 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:42 kernel: CONSOLE: 031242.587 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:43 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:43 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:43 kernel: CONSOLE: 031243.624 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:43 kernel: CONSOLE: 031243.624 wl0: wlc_scan_request_ex, can not scan due to error -4
+Oct 27 04:18:44 kernel: dhd_prot_ioctl: status ret value is -4 
+Oct 27 04:18:44 kernel: dhd_prot_ioctl: status ret value is -26 
+Oct 27 04:18:44 kernel: CONSOLE: 031244.660 wl0: wlc_scan_request_ex, can not scan while driver is down
+Oct 27 04:18:44 kernel: CONSOLE: 031244.660 wl0: wlc_scan_request_ex, can not scan due to error -4

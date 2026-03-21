@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Nexmon Framework & CSI Collection</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.5; padding: 12px; }
+    h1, h2, h3 { color: #1f3b6d; }
+    code { background: #f4f4f4; padding: 0 4px; }
+  </style>
+</head>
+<body>
+  <h1>Nexmon Framework & CSI Collection</h1>
+  <p>
+    CSI (Channel State Information) captures how Wi-Fi signals propagate between a
+    transmitter and a receiver. The Nexmon framework enables CSI extraction from
+    supported Broadcom chipsets by adding firmware patches and tooling that expose
+    per-packet channel measurements.
+  </p>
+
+  <h2>What is Nexmon?</h2>
+  <p>
+    Nexmon is a firmware patching framework for Broadcom Wi-Fi chips. It provides the
+    tooling and custom firmware needed to export CSI data from the radio interface.
+    In this project, Nexmon-based sniffers produce PCAP files that include a Nexmon
+    header and raw CSI payloads, which the application parses and stores.
+  </p>
+
+  <h2>How CSI is collected</h2>
+  <ol>
+    <li><strong>Configure the Wi-Fi profile:</strong> select the Nexmon framework and define
+      your access point/sniffer devices, channels, bandwidth, and capture duration.</li>
+    <li><strong>Start the experiment:</strong> the app triggers the sniffer to capture packets
+      per action window, saving PCAPs in the results folder.</li>
+    <li><strong>Extract CSI:</strong> the PCAP reader loads the Nexmon packets and converts the
+      raw payload into CSI tensors for analysis and plotting.</li>
+  </ol>
+
+  <h2>What information CSI includes</h2>
+  <ul>
+    <li><strong>Complex CSI per subcarrier:</strong> magnitude and phase values across OFDM
+      subcarriers, represented as complex numbers.</li>
+    <li><strong>Spatial streams:</strong> measurements per transmit/receive antenna pair when
+      multiple antennas are enabled.</li>
+    <li><strong>Timing metadata:</strong> per-packet timestamps used to align CSI with actions
+      and other sensors.</li>
+    <li><strong>Radio metadata:</strong> channel index, bandwidth, MCS, and other PHY details
+      included in the capture headers.</li>
+    <li><strong>Device metadata:</strong> MAC addresses and packet sequence information to
+      identify the transmitter/receiver and filter traffic.</li>
+  </ul>
+
+  <h2>Tips for high-quality captures</h2>
+  <ul>
+    <li>Match the sniffer channel/bandwidth to the router configuration.</li>
+    <li>Minimize interference by choosing a clean channel and stable antenna placement.</li>
+    <li>Use packet counters to validate that data is flowing before recording a session.</li>
+    <li>Keep capture durations aligned with the experiment profile to avoid truncated data.</li>
+  </ul>
+
+  <h2>Common questions</h2>
+  <ul>
+    <li><strong>Why is CSI missing?</strong> confirm the sniffer is running Nexmon firmware
+      and the framework is set to Nexmon in the Wi-Fi profile.</li>
+    <li><strong>Why are dimensions unexpected?</strong> the CSI tensor shape varies by number
+      of spatial streams and bandwidth; single-stream captures omit the Tx axis.</li>
+  </ul>
+</body>
+</html>

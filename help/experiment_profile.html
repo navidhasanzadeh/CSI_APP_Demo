@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Experiment Profile</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.5; padding: 12px; }
+    h1, h2 { color: #1f3b6d; }
+    table { border-collapse: collapse; margin-top: 0.5rem; }
+    th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; }
+  </style>
+</head>
+<body>
+  <h1>Experiment Profile</h1>
+  <p>
+    The experiment profile controls timing and storage for each capture session.
+  </p>
+  <h2>Key timing parameters</h2>
+  <table>
+    <tr><th>Parameter</th><th>Meaning</th></tr>
+    <tr><td>Beginning baseline</td><td>Idle recording time before the first action.</td></tr>
+    <tr><td>Between actions baseline</td><td>Idle recording time between actions.</td></tr>
+    <tr><td>Ending baseline</td><td>Idle recording time after the final action.</td></tr>
+    <tr><td>Action time</td><td>Duration of the guided action.</td></tr>
+    <tr><td>Stop time</td><td>Pause before advancing to the next action.</td></tr>
+    <tr><td>Preview pause</td><td>Delay before showing the action preview.</td></tr>
+    <tr><td>Repetition count</td><td>Number of times each action is repeated.</td></tr>
+  </table>
+  <h2>Example</h2>
+  <p>
+    For a 10-action experiment, set <em>Beginning baseline</em> to 15 seconds,
+    <em>Action time</em> to 4 seconds, and <em>Between actions baseline</em> to 10 seconds.
+    This produces a consistent buffer around each gesture so the PCAP and camera data
+    have context for labeling.
+  </p>
+</body>
+</html>

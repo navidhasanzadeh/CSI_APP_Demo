@@ -1,0 +1,112 @@
+profile_name,action_name,video_path
+default_actions,circle_clockwise,videos/circle_clockwise.mp4
+default_actions,left_right,videos/right_left.mp4
+default_actions,up_down,videos/up_down.mp4
+default_actions,push_pull,videos/push_pull.mp4
+actions_profile,Updown Pushpull,videos/push_pull.mp4
+default_actions_copy,Circle,videos/circle_clockwise.mp4
+default_actions_copy,Left right,videos/right_left.mp4
+default_actions_copy,Up down,videos/up_down.mp4
+default_actions_copy,Push pull,videos/push_pull.mp4
+default_actions_copy,Nothing,
+actions_profile_4_demo,Circle,videos/circle_clockwise.mp4
+actions_profile_4_demo,Left Right,videos/right_left.mp4
+actions_profile_4_demo,Up Down,videos/up_down.mp4
+actions_profile_4_demo,Push Pull,videos/push_pull.mp4
+default_actions_copy_1,Circle,videos/circle_clockwise.mp4
+default_actions_copy_1,Push Pull,videos/push_pull.mp4
+default_actions_copy_2,circle_clockwise,videos/circle_clockwise.mp4
+default_actions_copy_2,left_right,videos/right_left.mp4
+default_actions_copy_2,up_down,videos/up_down.mp4
+default_actions_copy_2,push_pull,videos/push_pull.mp4
+actions_profile_2,circle,videos/circle_clockwise.mp4
+actions_profile_2,left right,videos/right_left.mp4
+actions_profile_2,up down,videos/up_down.mp4
+actions_profile_2,push pull,videos/push_pull.mp4
+actions_profile_2_twoPeople,circle circle,videos/circle_clockwise.mp4
+actions_profile_2_twoPeople,left right left right,videos/right_left.mp4
+actions_profile_2_twoPeople,up down up down,videos/up_down.mp4
+actions_profile_2_twoPeople,push pull push pull,videos/push_pull.mp4
+actions_profile_2_twoPeople,circle left right,
+actions_profile_2_twoPeople,circle up down,
+actions_profile_2_twoPeople,circle pushpull,
+actions_profile_2_twoPeople,left right circle,
+actions_profile_2_twoPeople,left right up down,
+actions_profile_2_twoPeople,left right push pull,
+actions_profile_2_twoPeople,up down circle,
+actions_profile_2_twoPeople,up down left right,
+actions_profile_2_twoPeople,up down push pull,
+actions_profile_2_twoPeople,push pull circle,
+actions_profile_2_twoPeople,push pull left right,
+actions_profile_2_twoPeople,push pull up down,
+actions_profile_2_twoPeople_updown,up down circle,
+TwoUsers_5x5,Circle Nothing,videos/circle_clockwise.mp4
+TwoUsers_5x5,Left right Nothing,videos/right_left.mp4
+TwoUsers_5x5,Up down Nothing,videos/up_down.mp4
+TwoUsers_5x5,Push pull Nothing,videos/push_pull.mp4
+TwoUsers_5x5,Nothing Nothing,
+TwoUsers_5x5,Nothing Circle,
+TwoUsers_5x5,Nothing Left right,
+TwoUsers_5x5,Nothing Up down,
+TwoUsers_5x5,Nothing Push pull,
+TwoUsers_5x5,Circle Circle,
+TwoUsers_5x5,Circle Left right,
+TwoUsers_5x5,Circle Up down,
+TwoUsers_5x5,Circle Pushpull,
+TwoUsers_5x5,Left right Circle,
+TwoUsers_5x5,Left right Left right,
+TwoUsers_5x5,Left right Up down,
+TwoUsers_5x5,Left right Push pull,
+TwoUsers_5x5,Up down Circle,
+TwoUsers_5x5,Up down Left right,
+TwoUsers_5x5,Up down Up Down,
+TwoUsers_5x5,Up down Push Pull,
+TwoUsers_5x5,Push Pull Circle,
+TwoUsers_5x5,Push Pull Left Right,
+TwoUsers_5x5,Push Pull Up down,
+TwoUsers_5x5,Push Pull Push Pull,
+TwoUsers_5x5,new_action,
+puspull_nothing,Push pull,videos/push_pull.mp4
+puspull_nothing,Nothing,
+TwoUsers_5x5_copy,Up down Push pull,
+TwoUsers_5x5_copy,new_action,
+updownpushpull,Updown pushpull,
+updownpushpull,nothing,
+updownpushpull,new_action,
+MultiLocation,Location 1 Circle,/home/wirlab/Documents/CSI-Collection-Software/videos/circle_clockwise.mp4
+MultiLocation,Location 1 Up down,/home/wirlab/Documents/CSI-Collection-Software/videos/up_down.mp4
+MultiLocation,Location 2 Circle,/home/wirlab/Documents/CSI-Collection-Software/videos/circle_clockwise.mp4
+MultiLocation,Location 2 Updown,/home/wirlab/Documents/CSI-Collection-Software/videos/up_down.mp4
+MultiLocation,Location 3 Circle,/home/wirlab/Documents/CSI-Collection-Software/videos/circle_clockwise.mp4
+MultiLocation,Location 3 Updown,/home/wirlab/Documents/CSI-Collection-Software/videos/up_down.mp4
+MultiLocation,Location 4 Circle,/home/wirlab/Documents/CSI-Collection-Software/videos/circle_clockwise.mp4
+MultiLocation,Location 4 Updown,/home/wirlab/Documents/CSI-Collection-Software/videos/up_down.mp4
+MultiLocation,Location 5 Circle,/home/wirlab/Documents/CSI-Collection-Software/videos/circle_clockwise.mp4
+MultiLocation,Location 5 Updown,/home/wirlab/Documents/CSI-Collection-Software/videos/up_down.mp4
+Diverse_Locations,"Loc 1, Circle",
+Diverse_Locations,Left-Right,
+Diverse_Locations,Up-Down,
+Diverse_Locations,Push-Pull,
+Diverse_Locations,"Loc 2, Circle",
+Diverse_Locations,"Loc 3, Circle",
+Diverse_Locations,"Loc 4, Circle",
+Diverse_Locations,"Loc 5, Circle",
+Diverse_Locations,"Loc 6, Circle",
+Diverse_Locations,"Loc 7, Circle",
+Diverse_Locations,"Loc 8, Circle",
+Diverse_Locations,"Loc 9, Circle",
+Diverse_Locations,"Loc 10, Circle",
+Diverse_Locations,"Loc 11, Circle",
+Diverse_Locations,"Loc 12, Circle",
+Diverse_Locations,"Loc 13, Circle",
+Diverse_Locations,"Loc 14, Circle",
+Diverse_Locations,"Loc 15, Circle",
+Diverse_Locations,"Loc 16, Circle",
+Diverse_Locations,"Loc 17, Circle",
+Diverse_Locations,"Loc 18, Circle",
+Diverse_Locations,"Loc 19, Circle",
+Diverse_Locations,"Loc 20, Circle",
+Diverse_Locations,"Loc 21, Circle",
+Diverse_Locations,"Loc 22, Circle",
+Diverse_Locations,"Loc 23, Circle",
+Diverse_Locations,"Loc 24, Circle",

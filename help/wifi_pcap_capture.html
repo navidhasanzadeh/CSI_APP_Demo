@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Wi-Fi Capture & PCAP Management</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.5; padding: 12px; }
+    h1, h2 { color: #1f3b6d; }
+  </style>
+</head>
+<body>
+  <h1>Wi-Fi Capture & PCAP Management</h1>
+  <p>
+    Wi-Fi profiles define how CSI data is captured and how access points are managed.
+  </p>
+  <h2>Key parameters</h2>
+  <ul>
+    <li><strong>Framework/type</strong> - which capture pipeline you are using.</li>
+    <li><strong>Access points</strong> - routers, sniffers, and their login details.</li>
+    <li><strong>Delete previous PCAPs</strong> - clear storage before a new run.</li>
+    <li><strong>Count packets</strong> - enable packet counting for quick health checks.</li>
+    <li><strong>Channel/bandwidth</strong> - align sniffer settings with the router configuration.</li>
+    <li><strong>Capture duration</strong> - confirm action and baseline windows match the experiment profile.</li>
+  </ul>
+  <h2>Example</h2>
+  <p>
+    Before starting a new session, click <strong>Test Connections</strong> to verify each
+    access point is reachable. Use <strong>Delete PCAPs</strong> if you need a clean slate.
+    During the experiment, PCAPs are captured per action and stored in the results folder.
+  </p>
+  <h2>Common issues</h2>
+  <ul>
+    <li><strong>Missing packets:</strong> check the sniffer channel, antenna orientation, and that the router is transmitting.</li>
+    <li><strong>Login failures:</strong> re-validate router credentials and network connectivity.</li>
+    <li><strong>PCAPs too large:</strong> reduce capture duration or disable unused antenna pairs.</li>
+    <li><strong>Packet counter is zero:</strong> verify the MAC address filters and confirm the transmitter is active.</li>
+  </ul>
+</body>
+</html>

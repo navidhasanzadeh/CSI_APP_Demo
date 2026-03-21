@@ -1,0 +1,22 @@
+[
+  {
+    "label": "start_rawperf",
+    "description": "Start rawperf transmitter",
+    "order": 1,
+    "command": "cd /jffs/LEGACY160; nohup bash /jffs/LEGACY160/inject_frames.sh > /dev/null 2>&1 &",
+    "sleep": 0
+  },
+  {
+    "label": "wait_transmission",
+    "description": "Wait for rawperf transmission duration",
+    "order": 2,
+    "sleep": "{capture_duration}"
+  },
+  {
+    "label": "stop_rawperf",
+    "description": "Stop rawperf transmitter",
+    "order": 3,
+    "command": "killall rawperf",
+    "sleep": 0
+  }
+]

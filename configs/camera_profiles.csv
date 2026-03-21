@@ -1,0 +1,3 @@
+profile_name,use_webcam,camera_device,use_hand_recognition,hand_recognition_mode,hand_model_complexity,hand_left_wrist_color,hand_right_wrist_color,hand_wrist_circle_radius
+default_camera,0,0,0,live,light,#0000ff,#ff0000,18
+camera_profile,1,0,0,live,light,#0000ff,#ff0000,30

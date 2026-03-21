@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>UI, Camera, Voice, and Time Settings</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.5; padding: 12px; }
+    h1, h2 { color: #1f3b6d; }
+  </style>
+</head>
+<body>
+  <h1>UI, Camera, Voice, and Time Settings</h1>
+  <p>
+    These profiles control how the interface behaves during the experiment, plus any
+    camera overlays or voice prompts you want to enable.
+  </p>
+  <h2>Settings at a glance</h2>
+  <ul>
+    <li><strong>UI profile:</strong> enable action counters, adjust fonts for readability, and show/hide countdown timers.</li>
+    <li><strong>Camera profile:</strong> select the webcam device, enable hand recognition overlays, and confirm video resolution.</li>
+    <li><strong>Voice profile:</strong> choose a language for spoken prompts and toggle the assistant on/off.</li>
+    <li><strong>Time profile:</strong> sync to a preferred time server for consistent timestamps.</li>
+  </ul>
+  <h2>Depth camera notes (Intel RealSense D455)</h2>
+  <p>
+    The depth camera workflow expects a local webserver to stream the D455 feed so the
+    UI can embed it alongside CSI capture. Ensure the webserver is running on the same
+    machine and that the configured URL is reachable before starting the experiment.
+  </p>
+  <p>
+    On macOS, the RealSense drivers are not supported directly. We recommend using a
+    Windows or Linux virtual machine (for example via Parallels) that can access the
+    D455 USB device, run the depth camera webserver inside the VM, and expose it to the
+    host through a forwarded port.
+  </p>
+  <h2>Example setup</h2>
+  <p>
+    For a demo session, enable voice prompts in English, use the built-in laptop
+    camera, enable a large on-screen countdown timer, and verify the time profile is
+    synchronized before collecting data.
+  </p>
+  <h2>Common issues</h2>
+  <ul>
+    <li><strong>No camera feed:</strong> confirm OS permissions, device selection, and that the webcam is not locked by another app.</li>
+    <li><strong>Depth camera blank:</strong> verify the local webserver URL and that the D455 is visible inside the VM (macOS).</li>
+    <li><strong>Voice prompts missing:</strong> check the voice profile toggle and ensure gTTS and audio playback are available.</li>
+    <li><strong>Time drift:</strong> re-sync the time profile and confirm your time server is reachable.</li>
+  </ul>
+</body>
+</html>

@@ -1,0 +1,44 @@
+[
+  {
+    "label": "copy_time_utils",
+    "description": "Copy time synchronization utilities into JFFS",
+    "order": 1,
+    "command": "cp /mnt/CSI_USB/jffs/settime_ns /jffs/; cp /mnt/CSI_USB/jffs/gettime_ns /jffs/",
+    "sleep": 0
+  },
+  {
+    "label": "set_time",
+    "description": "Synchronize router clock with controller",
+    "order": 2,
+    "command": "/jffs/settime_ns {seconds} {nanoseconds}",
+    "sleep": 0
+  },
+  {
+    "label": "copy_csisoftware",
+    "description": "Copy CSI software into JFFS",
+    "order": 3,
+    "command": "cp -r /mnt/CSI_USB/jffs/csisoftware /jffs/",
+    "sleep": 0
+  },
+  {
+    "label": "copy_tofsoftware",
+    "description": "Copy TOF software into JFFS",
+    "order": 4,
+    "command": "cp -r /mnt/CSI_USB/jffs/tofsoftware /jffs/",
+    "sleep": 0
+  },
+  {
+    "label": "copy_send_periodically",
+    "description": "Copy send_periodically utilities",
+    "order": 5,
+    "command": "cp -r /mnt/CSI_USB/jffs/send_periodically /jffs/",
+    "sleep": 0
+  },
+  {
+    "label": "reload_dhd",
+    "description": "Reload dhd kernel module",
+    "order": 6,
+    "command": "cd /jffs/send_periodically; /sbin/rmmod dhd; /sbin/insmod /jffs/send_periodically/dhd.ko",
+    "sleep": 1
+  }
+]

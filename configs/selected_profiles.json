@@ -1,0 +1,12 @@
+{
+  "participant": "Farhan_Ali_Arasteh",
+  "experiment": "experiment_profile_copy",
+  "environment": "Setup_6AP_4UP_LOS_2_DOWN_NOLOS",
+  "actions": "TwoUsers_5x5",
+  "camera": "camera_profile",
+  "depth_camera": "default_depth_camera_copy",
+  "voice": "default_voice_copy",
+  "ui": "default_ui_copy",
+  "wifi": "1TX_6Sniffer",
+  "time": "default_time_copy"
+}

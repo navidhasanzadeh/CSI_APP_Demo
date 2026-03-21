@@ -1,0 +1,4 @@
+profile_name,name,order,wifi_receiver_ssid,wifi_receiver_password,ssh_username,ssh_password,ping_ip,ping_rate,run_as_sudo,initialize,framework
+default_wifi,default_wifi,1,,,,,,0.001,0,0,
+demo,demo,1,,,,,,0.001,0,0,
+demo_singleAP,demo,1,,,,,,0.001,0,0,

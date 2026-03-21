@@ -1,0 +1,79 @@
+[
+  {
+    "label": "copy_time_utils",
+    "description": "Copy time synchronization utilities into JFFS",
+    "order": 1,
+    "command": "cp /mnt/CSI_USB/nexmon_jffs/settime_ns /jffs/; cp /mnt/CSI_USB/nexmon_jffs/gettime_ns /jffs/",
+    "sleep": 1
+  },
+  {
+    "label": "set_time",
+    "description": "Synchronize router clock with controller",
+    "order": 2,
+    "command": "/jffs/settime_ns {seconds} {nanoseconds}",
+    "sleep": 1
+  },
+  {
+    "label": "copy_jffs",
+    "description": "Copy nexmon files into JFFS",
+    "order": 3,
+    "command": "cp /mnt/*/nexmon_jffs/* /jffs/",
+    "sleep": 1
+  },
+  {
+    "label": "eth5_monitor_off",
+    "description": "Disable monitor mode on eth5",
+    "order": 4,
+    "command": "cd /jffs; /usr/sbin/wl -i eth5 monitor 0",
+    "sleep": 1
+  },
+  {
+    "label": "eth6_monitor_off",
+    "description": "Disable monitor mode on eth6",
+    "order": 5,
+    "command": "cd /jffs; /usr/sbin/wl -i eth6 monitor 0",
+    "sleep": 1
+  },
+  {
+    "label": "eth5_down",
+    "description": "Bring eth5 interface down",
+    "order": 6,
+    "command": "cd /jffs; ifconfig eth5 down",
+    "sleep": 1
+  },
+  {
+    "label": "eth6_down",
+    "description": "Bring eth6 interface down",
+    "order": 7,
+    "command": "cd /jffs; ifconfig eth6 down",
+    "sleep": 1
+  },
+  {
+    "label": "wl_eth5_down",
+    "description": "Disable eth5 via wl",
+    "order": 8,
+    "command": "cd /jffs; /usr/sbin/wl -i eth5 down",
+    "sleep": 1
+  },
+  {
+    "label": "wl_eth6_down",
+    "description": "Disable eth6 via wl",
+    "order": 9,
+    "command": "cd /jffs; /usr/sbin/wl -i eth6 down",
+    "sleep": 1
+  },
+  {
+    "label": "reload_dhd_remove",
+    "description": "Unload dhd module",
+    "order": 10,
+    "command": "cd /jffs; /sbin/rmmod dhd",
+    "sleep": 1
+  },
+  {
+    "label": "reload_dhd_insert",
+    "description": "Load dhd module",
+    "order": 11,
+    "command": "cd /jffs; /sbin/insmod dhd.ko",
+    "sleep": 1
+  }
+]

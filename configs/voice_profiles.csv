@@ -1,0 +1,4 @@
+profile_name,use_voice_assistant,language,preview_actions_voice
+default_voice,0,en,1
+voice_profile,1,en,1
+default_voice_copy,1,en,0

@@ -1,0 +1,22 @@
+[
+  {
+    "label": "start_rawperf",
+    "description": "Start rawperf transmitter",
+    "order": 1,
+    "command": "nohup /jffs/send_periodically/rawperf -i {interface} -n 10800000 -f /jffs/send_periodically/packetnode1x1BP.dat -t 0 -q 1 > /dev/null 2>&1 &",
+    "sleep": 0
+  },
+  {
+    "label": "wait_transmission",
+    "description": "Wait for rawperf transmission duration",
+    "order": 2,
+    "sleep": "{capture_duration}"
+  },
+  {
+    "label": "stop_rawperf",
+    "description": "Stop rawperf transmitter",
+    "order": 3,
+    "command": "killall rawperf",
+    "sleep": 0
+  }
+]

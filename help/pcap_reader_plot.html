@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>PCAP Reader & Plotting</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.5; padding: 12px; }
+    h1, h2 { color: #1f3b6d; }
+  </style>
+</head>
+<body>
+  <h1>PCAP Reader & Plotting</h1>
+  <p>
+    The PCAP reader lets you browse captured experiments, inspect CSI packets, and plot
+    signal metrics over time.
+  </p>
+  <h2>Exported dataset pickles</h2>
+  <p>
+    Use <strong>Export Dataset</strong> in the reader to save a pickled dictionary that
+    contains CSI tensors plus metadata. The dictionary keys are
+    <code>(participant, sniffer, environment, trial, action)</code> tuples and each
+    entry stores <code>csi</code>, <code>timestamps</code>, and summary metadata. CSI is
+    shaped as <code>[time, subcarrier, rx, tx]</code> (or <code>[time, subcarrier, rx]</code>
+    for 1SS captures).
+  </p>
+  <h3>Example: load a pickle and inspect CSI</h3>
+  <pre><code>import pickle
+
+with open("/path/to/exported_dataset.pkl", "rb") as handle:
+    data = pickle.load(handle)
+
+key = ("Navid", "Sniffer 6", "demo1", "9", "Push pull")
+entry = data[key]
+
+print(entry["csi"].shape)
+print(entry["timestamps"][:5])</code></pre>
+  <h3>Example: plot a sample signal</h3>
+  <pre><code>import matplotlib.pyplot as plt
+import numpy as np
+
+csi = entry["csi"]  # [time, subcarrier, rx, tx]
+plt.figure()
+plt.plot(np.abs(csi[:, 23, 0, 0]))
+plt.title("Subcarrier 23 amplitude (Rx0, Tx0)")
+plt.xlabel("Packet index")
+plt.ylabel("Amplitude")
+plt.show()</code></pre>
+  <h3>Example: plot CSI ratio angle</h3>
+  <pre><code>import matplotlib.pyplot as plt
+import numpy as np
+
+ratio = entry["csi"][:, 23, 0, 0] / entry["csi"][:, 23, 0, 1]
+plt.figure()
+plt.plot(np.angle(ratio))
+plt.title("Angle of CSI ratio (Subcarrier 23, Rx0, Tx0/Tx1)")
+plt.xlabel("Packet index")
+plt.ylabel("Angle (radians)")
+plt.show()</code></pre>
+  <h2>Typical flow</h2>
+  <ol>
+    <li>Open the PCAP reader window.</li>
+    <li>Select an experiment folder that contains PCAP files.</li>
+    <li>Choose an action or segment to visualize.</li>
+    <li>Use the plot controls to adjust subcarriers, antenna pairs, and time ranges.</li>
+  </ol>
+  <h2>Settings worth checking</h2>
+  <ul>
+    <li><strong>Subcarrier range:</strong> start with a handful of stable subcarriers before expanding to all.</li>
+    <li><strong>Rx/Tx pairs:</strong> confirm the antenna pair matches your hardware setup.</li>
+    <li><strong>Time window:</strong> zoom into a single action window for cleaner plots.</li>
+    <li><strong>Amplitude vs phase:</strong> phase plots may need unwrapping or smoothing.</li>
+  </ul>
+  <h2>Common issues</h2>
+  <ul>
+    <li><strong>Empty plots:</strong> verify the correct action folder and that packets were captured.</li>
+    <li><strong>Jagged phase:</strong> check for dropped packets or apply phase unwrapping.</li>
+    <li><strong>Unexpected shape:</strong> 1SS captures omit the Tx axis; adjust indexing accordingly.</li>
+  </ul>
+  <h2>Example</h2>
+  <p>
+    If you suspect a noisy capture, load the action "left_right" and plot a few
+    subcarriers. Look for sudden amplitude spikes or dropouts that indicate packet loss
+    or interference.
+  </p>
+</body>
+</html>
