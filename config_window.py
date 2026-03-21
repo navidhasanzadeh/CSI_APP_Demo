@@ -3820,6 +3820,9 @@ class ConfigDialog(QDialog):
             "Scenario 2: Action-adjacent CSI captures", userData="scenario_2"
         )
         self.cmb_csi_scenario.addItem(
+            "Demo: Manual capture + immediate plotting", userData="demo"
+        )
+        self.cmb_csi_scenario.addItem(
             "No CSI collection (skip router connections)",
             userData="no_collection",
         )
@@ -6390,10 +6393,11 @@ class ConfigDialog(QDialog):
         if not hasattr(self, "chk_delete_prev_pcap"):
             return
 
-        is_scenario_two = str(scenario_value).lower() == "scenario_2"
-        if is_scenario_two:
+        scenario_name = str(scenario_value).lower()
+        lock_delete_toggle = scenario_name in {"scenario_2", "demo"}
+        if lock_delete_toggle:
             self.chk_delete_prev_pcap.setChecked(False)
-        self.chk_delete_prev_pcap.setEnabled(not is_scenario_two)
+        self.chk_delete_prev_pcap.setEnabled(not lock_delete_toggle)
 
     def _on_csi_scenario_changed(self):
         scenario_value = self.cmb_csi_scenario.currentData()

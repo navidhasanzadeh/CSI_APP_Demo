@@ -247,7 +247,7 @@ def main(argv: list[str] | None = None):
     scenario = str(wifi_profile.get("csi_capture_scenario", "scenario_2")).lower()
     access_points = wifi_profile.get("access_points", []) if wifi_profile else []
     wifi_enabled = bool(access_points) and scenario != "no_collection"
-    if wifi_enabled:
+    if wifi_enabled and scenario != "demo":
         expected_duration = _compute_expected_duration(experiment, actions)
         if scenario == "scenario_1":
             capture_duration = expected_duration
@@ -283,7 +283,7 @@ def main(argv: list[str] | None = None):
         depth_camera_profile=depth_camera_profile,
         ui_profile=ui_profile,
         environment_profile=environment_profile,
-        prestarted_wifi=wifi_capture_info if wifi_enabled else [],
+        prestarted_wifi=wifi_capture_info if wifi_enabled and scenario != "demo" else [],
         start_wifi_capture=wifi_enabled and not bool(wifi_capture_info),
         results_dir=results_dir,
         time_reference=time_ref,

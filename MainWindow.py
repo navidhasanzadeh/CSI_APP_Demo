@@ -35,7 +35,9 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QWidget,
     QVBoxLayout,
+    QHBoxLayout,
     QLabel,
+    QPushButton,
     QMessageBox,
     QInputDialog,
     QLineEdit,
@@ -54,6 +56,7 @@ from wifi_csi_manager import WiFiCSIManager, WiFiRouter
 from packet_counter import count_packets_for_macs
 from transferring_files_dialog import TransferringFilesDialog
 from password_manager import is_password_required, verify_password
+from demo_csi_plot_dialog import DemoCSIPlotDialog, load_csi_for_framework
 import time_reference as time_reference_module
 
 try:  # pragma: no cover - optional dependency
@@ -245,6 +248,7 @@ class MainWindow(QMainWindow):
     transfer_started = pyqtSignal(str, int)
     transfer_progress = pyqtSignal(str, int, int)
     transfer_finished = pyqtSignal(str, bool)
+    demo_plot_requested = pyqtSignal(dict)
 
     def __init__(
         self,
@@ -413,6 +417,7 @@ class MainWindow(QMainWindow):
         self._wifi_scenario = str(
             self.wifi_profile.get("csi_capture_scenario", "scenario_2")
         ).lower()
+        self._demo_capture_active = False
         self.pre_action_csi_duration = float(
             self.wifi_profile.get("pre_action_capture_duration", 2.0)
         )
@@ -426,14 +431,19 @@ class MainWindow(QMainWindow):
         self.transfer_started.connect(self._transfer_dialog.handle_transfer_started)
         self.transfer_progress.connect(self._transfer_dialog.handle_transfer_progress)
         self.transfer_finished.connect(self._transfer_dialog.handle_transfer_finished)
+        self.demo_plot_requested.connect(self._show_demo_plot_from_metadata)
         self._prestarted_wifi = prestarted_wifi or []
         self._init_ap_status_ui()
+        self._init_demo_mode_controls()
         if self._prestarted_wifi:
             self._adopt_prestarted_wifi(self._prestarted_wifi)
             if self._wifi_scenario == "scenario_1":
                 QtCore.QTimer.singleShot(0, self._start_prestarted_wifi_captures)
-        elif start_wifi_capture and self._wifi_scenario == "scenario_1":
-            self._start_wifi_capture_workers()
+        elif start_wifi_capture:
+            if self._wifi_scenario == "scenario_1":
+                self._start_wifi_capture_workers()
+            elif self._wifi_scenario == "demo":
+                self._prepare_demo_wifi_routers()
 
         # ensure the beginning baseline timing starts as soon as the phase begins
         self._start_beginning_baseline(self._now())
@@ -1178,6 +1188,164 @@ class MainWindow(QMainWindow):
             thread.start()
             self._wifi_capture_threads.append(thread)
 
+    def _init_demo_mode_controls(self):
+        self.demo_controls_widget = None
+        self.btn_demo_collect = None
+        self.btn_demo_close = None
+        if self._wifi_scenario != "demo":
+            return
+
+        details_group = getattr(self, "groupBox", None)
+        details_layout = details_group.layout() if details_group is not None else None
+        if details_layout is None:
+            return
+
+        self.demo_controls_widget = QWidget(self)
+        controls_layout = QVBoxLayout(self.demo_controls_widget)
+        controls_layout.setContentsMargins(0, 8, 0, 0)
+        title_label = QLabel("Demo CSI Mode")
+        title_label.setStyleSheet("font-weight: bold;")
+        controls_layout.addWidget(title_label)
+
+        buttons_layout = QHBoxLayout()
+        self.btn_demo_collect = QPushButton("Collect + Plot CSI", self.demo_controls_widget)
+        self.btn_demo_collect.clicked.connect(self._run_demo_capture)
+        buttons_layout.addWidget(self.btn_demo_collect)
+
+        self.btn_demo_close = QPushButton("Close Window", self.demo_controls_widget)
+        self.btn_demo_close.clicked.connect(self.close)
+        buttons_layout.addWidget(self.btn_demo_close)
+        controls_layout.addLayout(buttons_layout)
+        details_layout.addWidget(self.demo_controls_widget)
+
+    def _prepare_demo_wifi_routers(self):
+        access_points = self.wifi_manager.prioritize_transmitters_first(
+            self.wifi_profile.get("access_points", [])
+        )
+        for idx, ap in enumerate(access_points):
+            thread = threading.Thread(
+                target=self._demo_wifi_prepare_worker,
+                args=(idx, ap),
+                name=f"WiFiDemoPrepare-{idx}",
+                daemon=True,
+            )
+            thread.start()
+            self._wifi_capture_threads.append(thread)
+
+    def _demo_wifi_prepare_worker(self, idx: int, ap: dict):
+        ap_name = ap.get("name") or ap.get("ssid") or f"Access Point {idx + 1}"
+        ap_key = self._sanitize_ap_name(ap_name)
+        self._register_ap_index(ap_key)
+        remote_dir = self._get_capture_remote_dir(ap)
+        channel_bw = self.wifi_manager.format_channel_bandwidth(
+            ap.get("channel", ""), ap.get("bandwidth", "")
+        )
+        mac_addresses = self.wifi_manager.parse_mac_addresses(
+            ap.get("transmitter_macs", "")
+        )
+        skip_router_setup = bool(
+            ap.get("initialized_success")
+            or ap.get("skip_router_setup")
+            or self.wifi_profile.get("skip_router_setup")
+        )
+        self._update_ap_status(ap_key, "yellow", "Connecting…")
+        try:
+            router = self.wifi_manager.connect_router(ap, WiFiRouter)
+            self.wifi_manager.ensure_router_ready(
+                router,
+                channel_bw=channel_bw,
+                mac_addresses=mac_addresses,
+                skip_setup=skip_router_setup,
+                log=self._append_log_entry,
+            )
+            self._wifi_routers[ap_key] = router
+            self._append_run_session(
+                ap_key,
+                {
+                    "ap": ap,
+                    "exp_name": self._build_capture_prefix(ap_name),
+                    "remote_dir": remote_dir,
+                    "macs": mac_addresses,
+                    "channel_bw": channel_bw,
+                    "duration": max(self.action_time, 1.0),
+                    "delete_prev_pcap": False,
+                    "started": False,
+                },
+            )
+            self._update_ap_status(ap_key, "green", "Ready for demo capture")
+        except Exception as exc:  # pragma: no cover - network dependency
+            self._append_log_entry(f"Demo setup failed on {ap_name}: {exc}")
+            self._update_ap_status(ap_key, "red", "Demo setup failed")
+
+    def _run_demo_capture(self):
+        if self._wifi_scenario != "demo":
+            return
+        if self._demo_capture_active:
+            return
+        if not self._wifi_routers:
+            self._append_log_entry("Demo mode: no prepared routers are available.")
+            return
+        self._demo_capture_active = True
+        if self.btn_demo_collect is not None:
+            self.btn_demo_collect.setEnabled(False)
+        self.set_status("Demo capture started - perform the action now.", "green")
+        self._set_transcript_message("Demo capture running. Please perform the action now.")
+
+        worker = threading.Thread(
+            target=self._run_demo_capture_worker,
+            name="WiFiDemoCaptureCoordinator",
+            daemon=True,
+        )
+        worker.start()
+        self._wifi_capture_threads.append(worker)
+
+    def _run_demo_capture_worker(self):
+        duration = max(
+            float(self.pre_action_csi_duration) + float(self.action_time) + float(self.post_action_csi_duration),
+            1.0,
+        )
+        repetition = max(1, self.current_repetition + 1)
+        action_index = max(0, self.current_action_index)
+        action_name = self.action_names[action_index] if self.action_names else "demo"
+        timestamp_suffix = self._now_datetime().strftime("%Y%m%d_%H%M%S")
+
+        for ap_key, router in list(self._wifi_routers.items()):
+            base_info = self._get_base_run_info(ap_key) or {}
+            ap = base_info.get("ap", {})
+            ap_name = ap.get("name") or ap.get("ssid") or ap_key
+            exp_name = f"{self._build_capture_prefix(ap_name)}_demo_r{repetition}_{timestamp_suffix}"
+            run_info = {
+                "ap": ap,
+                "exp_name": exp_name,
+                "remote_dir": base_info.get("remote_dir", self._get_capture_remote_dir(ap)),
+                "macs": base_info.get("macs", []),
+                "channel_bw": base_info.get("channel_bw", ""),
+                "duration": duration,
+                "delete_prev_pcap": False,
+                "started": False,
+                "activity": f"demo_{action_name}",
+                "repetition_count": repetition,
+                "action_index": action_index,
+            }
+            self._append_run_session(ap_key, run_info)
+            self._start_capture_on_router(
+                ap_key,
+                router,
+                run_info=run_info,
+                override_duration=duration,
+                override_exp_name=exp_name,
+                override_remote_dir=run_info["remote_dir"],
+            )
+            self._download_capture_session(ap_key, router, run_info)
+            run_info["downloaded"] = True
+
+        self._demo_capture_active = False
+        if self.btn_demo_collect is not None:
+            QtCore.QTimer.singleShot(0, lambda: self.btn_demo_collect.setEnabled(True))
+        QtCore.QTimer.singleShot(
+            0, lambda: self.set_status("Demo capture finished. Press Collect to run again.", "yellow")
+        )
+
     def _maybe_schedule_action_captures(self, t_in_cycle: float):
         if self._wifi_scenario != "scenario_2":
             return
@@ -1722,7 +1890,11 @@ class MainWindow(QMainWindow):
         download_threads = []
         total_downloads = 0
         for ap_key, router in list(self._wifi_routers.items()):
-            run_sessions = [run for run in self._get_run_sessions(ap_key) if run.get("started")]
+            run_sessions = [
+                run
+                for run in self._get_run_sessions(ap_key)
+                if run.get("started") and not run.get("downloaded")
+            ]
             if not run_sessions:
                 continue
             total_downloads += sum(
@@ -1885,8 +2057,36 @@ class MainWindow(QMainWindow):
             "file_size_bytes": (local_path.stat().st_size if local_path.exists() else None),
         }
         self._wifi_download_results.append(metadata)
+        if self._wifi_scenario == "demo":
+            self.demo_plot_requested.emit(metadata)
         self._update_ap_status(ap_key, "green", "Downloaded")
         self.transfer_finished.emit(target_file, True)
+
+    def _show_demo_plot_from_metadata(self, metadata: dict):
+        local_path = metadata.get("local_path")
+        if not local_path:
+            return
+        framework = metadata.get("framework", "nexmon")
+        try:
+            csi_data, time_vals = load_csi_for_framework(
+                local_path,
+                framework=framework,
+                bandwidth=80,
+            )
+            if csi_data.ndim == 3:
+                csi_data = csi_data[:, :, :, np.newaxis]
+            if csi_data.ndim == 2:
+                csi_data = csi_data[:, :, np.newaxis, np.newaxis]
+            title = f"Demo CSI Plot - {Path(local_path).name}"
+            dialog = DemoCSIPlotDialog(
+                csi_data=csi_data,
+                time_values=time_vals,
+                title=title,
+                parent=self,
+            )
+            dialog.exec_()
+        except Exception as exc:
+            self._append_log_entry(f"Demo plot failed for {local_path}: {exc}")
 
     def _show_packet_counts(
         self, ap_name: str, mac_counts: dict[str, int], total_packets: int
