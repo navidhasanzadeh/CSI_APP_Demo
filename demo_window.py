@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import threading
+import time
 from datetime import datetime
 from pathlib import Path
 from itertools import combinations
@@ -12,20 +13,28 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import (
+    QCheckBox,
     QFormLayout,
     QHBoxLayout,
     QLabel,
     QMessageBox,
+    QProgressDialog,
     QPushButton,
     QScrollArea,
     QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
+from PyQt5.QtCore import Qt, QTimer
 
 from pcap_reader import ProcessPcap
 from pcap_reader_ui import _read_ubilocate_csi
 from wifi_csi_manager import WiFiCSIManager
+
+try:  # pragma: no cover - optional dependency at runtime
+    from hampel import hampel
+except ImportError:  # pragma: no cover - optional dependency at runtime
+    hampel = None
 
 
 class DemoWindow(QWidget):
@@ -50,6 +59,9 @@ class DemoWindow(QWidget):
         self.results_dir = Path(results_dir)
         self.wifi_manager = WiFiCSIManager(self.wifi_profile)
         self._capture_thread = None
+        self._capture_started_at = 0.0
+        self._capture_progress_dialog: QProgressDialog | None = None
+        self._capture_progress_timer: QTimer | None = None
 
         self.capture_finished.connect(self._on_capture_finished)
         self.plot_requested.connect(self._on_plot_requested)
@@ -69,6 +81,14 @@ class DemoWindow(QWidget):
         stats_row.addRow("Received packets:", self.packet_count_label)
         stats_row.addRow("Sampling rate:", self.sampling_rate_label)
         root.addLayout(stats_row)
+
+        self.chk_hampel_ratio_phase = QCheckBox(
+            "Apply Hampel filter to CSI ratio phase", self
+        )
+        self.chk_hampel_ratio_phase.setChecked(
+            bool(self.demo_profile.get("apply_hampel_to_ratio_phase", False))
+        )
+        root.addWidget(self.chk_hampel_ratio_phase)
 
         self.figure = Figure(figsize=(10, 6), dpi=100)
         self.canvas = FigureCanvas(self.figure)
@@ -101,9 +121,51 @@ class DemoWindow(QWidget):
             return
 
         self.btn_capture.setEnabled(False)
-        self.status_label.setText("Capturing CSI...")
+        capture_duration = self._capture_duration()
+        self.status_label.setText("Capturing CSI... Please perform the target activity now.")
+        self._start_capture_progress(capture_duration)
         self._capture_thread = threading.Thread(target=self._run_capture_cycle, daemon=True)
         self._capture_thread.start()
+
+    def _start_capture_progress(self, capture_duration: float) -> None:
+        self._capture_started_at = time.monotonic()
+        self._capture_progress_dialog = QProgressDialog(
+            "Capture in progress.\nPlease perform the target activity now.",
+            None,
+            0,
+            100,
+            self,
+        )
+        self._capture_progress_dialog.setWindowTitle("Demo CSI Capture")
+        self._capture_progress_dialog.setWindowModality(Qt.WindowModal)
+        self._capture_progress_dialog.setCancelButton(None)
+        self._capture_progress_dialog.setMinimumDuration(0)
+        self._capture_progress_dialog.setValue(0)
+        self._capture_progress_dialog.show()
+
+        self._capture_progress_timer = QTimer(self)
+
+        def _update_progress() -> None:
+            if not self._capture_progress_dialog:
+                return
+            elapsed = max(0.0, time.monotonic() - self._capture_started_at)
+            percent = int(min(99, (elapsed / max(capture_duration, 0.1)) * 100))
+            self._capture_progress_dialog.setValue(percent)
+
+        self._capture_progress_timer.timeout.connect(_update_progress)
+        self._capture_progress_timer.start(100)
+        _update_progress()
+
+    def _stop_capture_progress(self) -> None:
+        if self._capture_progress_timer is not None:
+            self._capture_progress_timer.stop()
+            self._capture_progress_timer.deleteLater()
+            self._capture_progress_timer = None
+        if self._capture_progress_dialog is not None:
+            self._capture_progress_dialog.setValue(100)
+            self._capture_progress_dialog.close()
+            self._capture_progress_dialog.deleteLater()
+            self._capture_progress_dialog = None
 
     def _run_capture_cycle(self):
         try:
@@ -222,6 +284,23 @@ class DemoWindow(QWidget):
         except Exception:
             return False
 
+    def _apply_hampel_filter(self, values: np.ndarray) -> np.ndarray:
+        if hampel is None:
+            self.status_label.setText(
+                "Hampel filter is unavailable (missing dependency). Plotting unfiltered ratio phase."
+            )
+            return values
+        try:
+            filtered = hampel(values, window_size=8)
+        except Exception as exc:
+            self.status_label.setText(f"Hampel filter failed ({exc}). Plotting unfiltered ratio phase.")
+            return values
+        if hasattr(filtered, "filtered_data"):
+            return np.asarray(filtered.filtered_data)
+        if isinstance(filtered, tuple):
+            return np.asarray(filtered[0])
+        return np.asarray(filtered)
+
     def _plot_ratio(self, pcap_path: Path, bandwidth_mhz: int):
         if not self._has_payload_packets(pcap_path):
             self.status_label.setText(
@@ -309,6 +388,8 @@ class DemoWindow(QWidget):
             ratio = numerator / (denominator + 1e-12)
             ratio_mag = np.abs(ratio)
             ratio_phase = np.angle(ratio)
+            if self.chk_hampel_ratio_phase.isChecked():
+                ratio_phase = self._apply_hampel_filter(ratio_phase)
 
             ax_mag = self.figure.add_subplot(grid[row_idx, 0])
             ax_phase = self.figure.add_subplot(grid[row_idx, 1], sharex=ax_mag)
@@ -334,6 +415,7 @@ class DemoWindow(QWidget):
         self._plot_ratio(Path(pcap_path), int(bandwidth_mhz))
 
     def _on_capture_finished(self, success: bool, message: str):
+        self._stop_capture_progress()
         self.btn_capture.setEnabled(True)
         self.status_label.setText(message)
         if not success:
