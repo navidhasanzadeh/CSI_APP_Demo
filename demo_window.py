@@ -26,6 +26,7 @@ from PyQt5.QtWidgets import (
     QSizePolicy,
     QVBoxLayout,
     QWidget,
+    QTabWidget,
 )
 from PyQt5.QtCore import Qt, QTimer
 
@@ -64,6 +65,7 @@ class DemoWindow(QWidget):
         self._capture_started_at = 0.0
         self._capture_progress_dialog: QProgressDialog | None = None
         self._capture_progress_timer: QTimer | None = None
+        self._clock_timer: QTimer | None = None
 
         self.capture_finished.connect(self._on_capture_finished)
         self.plot_requested.connect(self._on_plot_requested)
@@ -76,7 +78,26 @@ class DemoWindow(QWidget):
         root.setSpacing(12)
 
         header_row = QHBoxLayout()
-        header_row.addStretch(1)
+        header_left_col = QVBoxLayout()
+        header_left_col.setSpacing(2)
+        self.icassp_logo_label = QLabel(self._icassp_title_text(), self)
+        self.icassp_logo_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.icassp_logo_label.setStyleSheet("font-size: 24px; font-weight: 700; color: #1e3a8a;")
+        header_left_col.addWidget(self.icassp_logo_label)
+
+        self.authors_label = QLabel(self._authors_text(), self)
+        self.authors_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.authors_label.setWordWrap(True)
+        self.authors_label.setStyleSheet("font-size: 14px; font-weight: 600; color: #111827;")
+        header_left_col.addWidget(self.authors_label)
+
+        self.university_label = QLabel(self._university_text(), self)
+        self.university_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.university_label.setWordWrap(True)
+        self.university_label.setStyleSheet("font-size: 14px; font-weight: 600; color: #111827;")
+        header_left_col.addWidget(self.university_label)
+        header_row.addLayout(header_left_col, stretch=2)
+
         self.title_label = QLabel(self._demo_title_text(), self)
         self.title_label.setAlignment(Qt.AlignCenter)
         self.title_label.setWordWrap(True)
@@ -89,32 +110,12 @@ class DemoWindow(QWidget):
         self.wirlab_logo_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.wirlab_logo_label.setStyleSheet("font-size: 28px; font-weight: 800; color: #0f5e2b;")
         logo_col.addWidget(self.wirlab_logo_label)
-
-        self.icassp_logo_label = QLabel("ICASSP 2026", self)
-        self.icassp_logo_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.icassp_logo_label.setStyleSheet("font-size: 24px; font-weight: 700; color: #1e3a8a;")
-        logo_col.addWidget(self.icassp_logo_label)
         header_row.addLayout(logo_col, stretch=1)
         root.addLayout(header_row)
 
         self.status_label = QLabel("Ready for demo capture.", self)
         self.status_label.setStyleSheet("font-size: 15px; color: #1f2937;")
         root.addWidget(self.status_label)
-
-        stats_row = QFormLayout()
-        self.packet_count_label = QLabel("Packets: -", self)
-        self.sampling_rate_label = QLabel("Sampling rate: - pkt/s", self)
-        stats_row.addRow("Received packets:", self.packet_count_label)
-        stats_row.addRow("Sampling rate:", self.sampling_rate_label)
-        root.addLayout(stats_row)
-
-        self.chk_hampel_ratio_phase = QCheckBox(
-            "Apply Hampel filter to CSI ratio phase", self
-        )
-        self.chk_hampel_ratio_phase.setChecked(
-            bool(self.demo_profile.get("apply_hampel_to_ratio_phase", False))
-        )
-        root.addWidget(self.chk_hampel_ratio_phase)
 
         self.figure = Figure(figsize=(10, 6), dpi=100)
         self.canvas = FigureCanvas(self.figure)
@@ -125,7 +126,56 @@ class DemoWindow(QWidget):
         self.plot_scroll.setStyleSheet(
             "QScrollArea {border: 1px solid #cfd8e3; border-radius: 10px; background: #ffffff;}"
         )
-        root.addWidget(self.plot_scroll, stretch=1)
+
+        self.demo_tabs = QTabWidget(self)
+        self.demo_tabs.setStyleSheet(
+            "QTabWidget::pane { border: 1px solid #cfd8e3; border-radius: 8px; background: #ffffff; }"
+            "QTabBar::tab { padding: 8px 12px; }"
+        )
+        csi_tab = QWidget(self.demo_tabs)
+        csi_layout = QVBoxLayout(csi_tab)
+        self.chk_hampel_ratio_phase = QCheckBox(
+            "Apply Hampel filter to CSI ratio phase", csi_tab
+        )
+        self.chk_hampel_ratio_phase.setChecked(
+            bool(self.demo_profile.get("apply_hampel_to_ratio_phase", False))
+        )
+        csi_layout.addWidget(self.chk_hampel_ratio_phase)
+        csi_layout.addWidget(self.plot_scroll, stretch=1)
+        self.demo_tabs.addTab(csi_tab, "CSI Magnitude and Phase")
+
+        doppler_proj_tab = QWidget(self.demo_tabs)
+        doppler_proj_layout = QVBoxLayout(doppler_proj_tab)
+        doppler_proj_layout.addWidget(QLabel("Doppler Projections (coming soon).", doppler_proj_tab))
+        doppler_proj_layout.addStretch(1)
+        self.demo_tabs.addTab(doppler_proj_tab, "Doppler Projections")
+
+        dorf_tab = QWidget(self.demo_tabs)
+        dorf_layout = QVBoxLayout(dorf_tab)
+        dorf_layout.addWidget(QLabel("Doppler Radiance Fields (DoRF) (coming soon).", dorf_tab))
+        dorf_layout.addStretch(1)
+        self.demo_tabs.addTab(dorf_tab, "Doppler Radiance Fields (DoRF)")
+
+        content_row = QHBoxLayout()
+        content_row.addWidget(self.demo_tabs, stretch=4)
+
+        info_pane = QFrame(self)
+        info_pane.setFrameShape(QFrame.StyledPanel)
+        info_pane.setStyleSheet(
+            "QFrame {border: 1px solid #cfd8e3; border-radius: 8px; background: #f8fafc;}"
+            "QLabel {color: #1f2937;}"
+        )
+        info_layout = QFormLayout(info_pane)
+        info_layout.setLabelAlignment(Qt.AlignLeft)
+        self.packet_count_label = QLabel("-", info_pane)
+        self.sampling_rate_label = QLabel("- pkt/s", info_pane)
+        self.datetime_label = QLabel("-", info_pane)
+        info_layout.addRow("Received packets:", self.packet_count_label)
+        info_layout.addRow("Sampling rate:", self.sampling_rate_label)
+        info_layout.addRow("Current date & time:", self.datetime_label)
+        content_row.addWidget(info_pane, stretch=1)
+        root.addLayout(content_row, stretch=1)
+        self._start_clock_updates()
 
         bottom_row = QHBoxLayout()
         button_row = QHBoxLayout()
@@ -162,11 +212,16 @@ class DemoWindow(QWidget):
         self._update_qr_placeholder()
 
         qr_container = QVBoxLayout()
-        qr_label = QLabel("QR Code", self)
-        qr_label.setAlignment(Qt.AlignCenter)
-        qr_label.setStyleSheet("font-size: 14px; font-weight: 700; color: #1f2937;")
-        qr_container.addWidget(qr_label)
         qr_container.addWidget(self.qr_placeholder, alignment=Qt.AlignRight)
+        self.qr_caption_label = QLabel("QR Code", self)
+        self.qr_caption_label.setAlignment(Qt.AlignCenter)
+        self.qr_caption_label.setStyleSheet("font-size: 14px; font-weight: 700; color: #1f2937;")
+        qr_container.addWidget(self.qr_caption_label)
+        self.qr_website_label = QLabel(self._qr_website_text(), self)
+        self.qr_website_label.setAlignment(Qt.AlignCenter)
+        self.qr_website_label.setStyleSheet("font-size: 13px; font-weight: 600; color: #2563eb;")
+        self.qr_website_label.setWordWrap(True)
+        qr_container.addWidget(self.qr_website_label)
         bottom_row.addLayout(qr_container, stretch=1)
 
         root.addLayout(bottom_row)
@@ -179,6 +234,31 @@ class DemoWindow(QWidget):
 
     def _qr_image_path(self) -> str:
         return str(self.demo_profile.get("qr_code_image_path") or "").strip()
+
+    def _qr_website_text(self) -> str:
+        text = str(self.demo_profile.get("qr_website_url") or "").strip()
+        return text or "https://dorf.navidhasanzadeh.com"
+
+    def _icassp_title_text(self) -> str:
+        text = str(self.demo_profile.get("icassp_title_text") or "").strip()
+        return text or "IEEE ICASSP 2026"
+
+    def _authors_text(self) -> str:
+        text = str(self.demo_profile.get("authors_text") or "").strip()
+        return text or "Authors: Navid Hasanzadeh, Shahrokh Valaee"
+
+    def _university_text(self) -> str:
+        text = str(self.demo_profile.get("university_text") or "").strip()
+        return text or "University of Toronto"
+
+    def _start_clock_updates(self) -> None:
+        self._clock_timer = QTimer(self)
+        self._clock_timer.timeout.connect(self._update_datetime_label)
+        self._clock_timer.start(1000)
+        self._update_datetime_label()
+
+    def _update_datetime_label(self) -> None:
+        self.datetime_label.setText(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     def _update_qr_placeholder(self) -> None:
         path = self._qr_image_path()
@@ -393,8 +473,8 @@ class DemoWindow(QWidget):
             self.status_label.setText(
                 f"Cannot plot {pcap_path.name}: PCAP is empty (header only, no CSI packets)."
             )
-            self.packet_count_label.setText("Packets: 0")
-            self.sampling_rate_label.setText("Sampling rate: 0.00 pkt/s")
+            self.packet_count_label.setText("0")
+            self.sampling_rate_label.setText("0.00 pkt/s")
             return
         csi_data: np.ndarray | None = None
         time_pkts: np.ndarray | None = None
@@ -420,8 +500,8 @@ class DemoWindow(QWidget):
 
         if csi_data is None or time_pkts is None or csi_data.size == 0:
             self.status_label.setText(f"Unable to load CSI data from {pcap_path.name}.")
-            self.packet_count_label.setText("Packets: 0")
-            self.sampling_rate_label.setText("Sampling rate: 0.00 pkt/s")
+            self.packet_count_label.setText("0")
+            self.sampling_rate_label.setText("0.00 pkt/s")
             return
 
         time_vals = np.asarray(time_pkts, dtype=float)
@@ -509,6 +589,8 @@ class DemoWindow(QWidget):
             QMessageBox.warning(self, "Demo Capture", message)
 
     def closeEvent(self, event):
+        if self._clock_timer is not None:
+            self._clock_timer.stop()
         for entry in self.routers_info:
             router = entry.get("router")
             if router is None:
