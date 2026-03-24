@@ -5,16 +5,20 @@ from __future__ import annotations
 import threading
 from datetime import datetime
 from pathlib import Path
+from itertools import combinations
 
 import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import (
+    QFormLayout,
     QHBoxLayout,
     QLabel,
     QMessageBox,
     QPushButton,
+    QScrollArea,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -59,9 +63,20 @@ class DemoWindow(QWidget):
         self.status_label = QLabel("Ready for demo capture.", self)
         root.addWidget(self.status_label)
 
+        stats_row = QFormLayout()
+        self.packet_count_label = QLabel("Packets: -", self)
+        self.sampling_rate_label = QLabel("Sampling rate: - pkt/s", self)
+        stats_row.addRow("Received packets:", self.packet_count_label)
+        stats_row.addRow("Sampling rate:", self.sampling_rate_label)
+        root.addLayout(stats_row)
+
         self.figure = Figure(figsize=(10, 6), dpi=100)
         self.canvas = FigureCanvas(self.figure)
-        root.addWidget(self.canvas, stretch=1)
+        self.canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.plot_scroll = QScrollArea(self)
+        self.plot_scroll.setWidgetResizable(True)
+        self.plot_scroll.setWidget(self.canvas)
+        root.addWidget(self.plot_scroll, stretch=1)
 
         button_row = QHBoxLayout()
         self.btn_capture = QPushButton("CSI Capture", self)
@@ -212,6 +227,8 @@ class DemoWindow(QWidget):
             self.status_label.setText(
                 f"Cannot plot {pcap_path.name}: PCAP is empty (header only, no CSI packets)."
             )
+            self.packet_count_label.setText("Packets: 0")
+            self.sampling_rate_label.setText("Sampling rate: 0.00 pkt/s")
             return
         csi_data: np.ndarray | None = None
         time_pkts: np.ndarray | None = None
@@ -237,32 +254,79 @@ class DemoWindow(QWidget):
 
         if csi_data is None or time_pkts is None or csi_data.size == 0:
             self.status_label.setText(f"Unable to load CSI data from {pcap_path.name}.")
+            self.packet_count_label.setText("Packets: 0")
+            self.sampling_rate_label.setText("Sampling rate: 0.00 pkt/s")
             return
 
-        stream = csi_data[:, min(23, nfft - 1), 0, 0]
-        magnitude = np.abs(stream)
-        ratio_phase = np.angle(stream / (np.mean(stream) + 1e-6))
-        time_vals = np.asarray(time_pkts)
-        if time_vals.size == magnitude.size:
+        time_vals = np.asarray(time_pkts, dtype=float)
+        packet_count = int(min(csi_data.shape[0], time_vals.size if time_vals.size else csi_data.shape[0]))
+        csi_data = csi_data[:packet_count]
+        time_vals = time_vals[:packet_count] if time_vals.size else np.array([])
+        self.packet_count_label.setText(str(packet_count))
+
+        sampling_rate = 0.0
+        if packet_count > 1 and time_vals.size == packet_count:
+            duration = float(time_vals[-1] - time_vals[0])
+            if duration > 0:
+                sampling_rate = float((packet_count - 1) / duration)
+        self.sampling_rate_label.setText(f"{sampling_rate:.2f} pkt/s")
+
+        subcarrier_idx = min(23, nfft - 1)
+        rx_count = csi_data.shape[2] if csi_data.ndim >= 3 else 1
+        tx_count = csi_data.shape[3] if csi_data.ndim >= 4 else 1
+        tx_pairs = list(combinations(range(tx_count), 2))
+        if not tx_pairs:
+            self.status_label.setText(
+                f"Unable to compute CSI ratio from {pcap_path.name}: at least 2 TX antennas are required."
+            )
+            return
+
+        total_pairs = rx_count * len(tx_pairs)
+        if time_vals.size == packet_count:
             x = time_vals
             x_label = "Time (s)"
         else:
-            x = np.arange(magnitude.size)
+            x = np.arange(packet_count)
             x_label = "Packet index"
 
         self.figure.clear()
-        ax_mag = self.figure.add_subplot(2, 1, 1)
-        ax_ratio = self.figure.add_subplot(2, 1, 2, sharex=ax_mag)
-        ax_mag.plot(x, magnitude, color="tab:blue")
-        ax_mag.set_title(f"CSI Magnitude ({pcap_path.name})")
-        ax_mag.set_ylabel("|CSI|")
-        ax_mag.grid(True)
+        grid = self.figure.add_gridspec(
+            total_pairs,
+            2,
+            width_ratios=[1, 1],
+            wspace=0.35,
+            hspace=0.6,
+        )
+        figure_height = max(8, total_pairs * 2.1)
+        self.figure.set_size_inches(12, figure_height)
+        self.canvas.setMinimumHeight(int(figure_height * self.figure.get_dpi()))
 
-        ax_ratio.plot(x, ratio_phase, color="tab:green")
-        ax_ratio.set_title("CSI Ratio-like Phase (real-time demo)")
-        ax_ratio.set_ylabel("Phase (rad)")
-        ax_ratio.set_xlabel(x_label)
-        ax_ratio.grid(True)
+        for row_idx, (rx_idx, (tx_num, tx_den)) in enumerate(
+            (rx_tx for rx_tx in ((r, pair) for r in range(rx_count) for pair in tx_pairs))
+        ):
+            numerator = csi_data[:, subcarrier_idx, rx_idx, tx_num]
+            denominator = csi_data[:, subcarrier_idx, rx_idx, tx_den]
+            ratio = numerator / (denominator + 1e-12)
+            ratio_mag = np.abs(ratio)
+            ratio_phase = np.angle(ratio)
+
+            ax_mag = self.figure.add_subplot(grid[row_idx, 0])
+            ax_phase = self.figure.add_subplot(grid[row_idx, 1], sharex=ax_mag)
+
+            ax_mag.plot(x, ratio_mag, color="tab:blue", linewidth=0.9)
+            ax_mag.set_ylabel("|Ratio|")
+            ax_mag.set_title(f"RX {rx_idx + 1}: TX {tx_num + 1}/TX {tx_den + 1} Magnitude")
+            ax_mag.grid(True)
+
+            ax_phase.plot(x, ratio_phase, color="tab:green", linewidth=0.9)
+            ax_phase.set_ylabel("Phase (rad)")
+            ax_phase.set_title(f"RX {rx_idx + 1}: TX {tx_num + 1}/TX {tx_den + 1} Phase")
+            ax_phase.grid(True)
+
+            if row_idx == total_pairs - 1:
+                ax_mag.set_xlabel(x_label)
+                ax_phase.set_xlabel(x_label)
+
         self.figure.tight_layout()
         self.canvas.draw_idle()
 
