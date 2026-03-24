@@ -393,6 +393,10 @@ DEFAULT_DEMO_PROFILE = {
     "apply_hampel_to_ratio_phase": False,
     "demo_title_text": "Doppler Radiance Fields (DoRF) for Robust Wi-Fi Sensing and Human Activity Recognition",
     "qr_code_image_path": "",
+    "qr_website_url": "https://dorf.navidhasanzadeh.com",
+    "icassp_title_text": "IEEE ICASSP 2026",
+    "authors_text": "Authors: Navid Hasanzadeh, Shahrokh Valaee",
+    "university_text": "University of Toronto",
 }
 
 DEFAULT_WIFI_AP = {
@@ -890,6 +894,22 @@ def _load_demo_profiles_from_csv():
                     row.get("qr_code_image_path")
                     or profile["qr_code_image_path"]
                 ).strip()
+                profile["qr_website_url"] = (
+                    row.get("qr_website_url")
+                    or profile["qr_website_url"]
+                ).strip() or DEFAULT_DEMO_PROFILE["qr_website_url"]
+                profile["icassp_title_text"] = (
+                    row.get("icassp_title_text")
+                    or profile["icassp_title_text"]
+                ).strip() or DEFAULT_DEMO_PROFILE["icassp_title_text"]
+                profile["authors_text"] = (
+                    row.get("authors_text")
+                    or profile["authors_text"]
+                ).strip() or DEFAULT_DEMO_PROFILE["authors_text"]
+                profile["university_text"] = (
+                    row.get("university_text")
+                    or profile["university_text"]
+                ).strip() or DEFAULT_DEMO_PROFILE["university_text"]
                 profiles[profile_name] = profile
     except Exception:
         return {}
@@ -1779,6 +1799,10 @@ def save_demo_profiles(profiles: dict):
                 "apply_hampel_to_ratio_phase",
                 "demo_title_text",
                 "qr_code_image_path",
+                "qr_website_url",
+                "icassp_title_text",
+                "authors_text",
+                "university_text",
             ]
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
@@ -1815,6 +1839,42 @@ def save_demo_profiles(profiles: dict):
                                 DEFAULT_DEMO_PROFILE["qr_code_image_path"],
                             )
                         ).strip(),
+                        "qr_website_url": (
+                            str(
+                                profile.get(
+                                    "qr_website_url",
+                                    DEFAULT_DEMO_PROFILE["qr_website_url"],
+                                )
+                            ).strip()
+                            or DEFAULT_DEMO_PROFILE["qr_website_url"]
+                        ),
+                        "icassp_title_text": (
+                            str(
+                                profile.get(
+                                    "icassp_title_text",
+                                    DEFAULT_DEMO_PROFILE["icassp_title_text"],
+                                )
+                            ).strip()
+                            or DEFAULT_DEMO_PROFILE["icassp_title_text"]
+                        ),
+                        "authors_text": (
+                            str(
+                                profile.get(
+                                    "authors_text",
+                                    DEFAULT_DEMO_PROFILE["authors_text"],
+                                )
+                            ).strip()
+                            or DEFAULT_DEMO_PROFILE["authors_text"]
+                        ),
+                        "university_text": (
+                            str(
+                                profile.get(
+                                    "university_text",
+                                    DEFAULT_DEMO_PROFILE["university_text"],
+                                )
+                            ).strip()
+                            or DEFAULT_DEMO_PROFILE["university_text"]
+                        ),
                     }
                 )
     except Exception:
@@ -4096,6 +4156,22 @@ class ConfigDialog(QDialog):
         self.txt_demo_qr_image_path.setPlaceholderText("/path/to/qr-code.png")
         form.addRow("QR image path:", self.txt_demo_qr_image_path)
 
+        self.txt_demo_qr_website = QLineEdit(self.grp_demo)
+        self.txt_demo_qr_website.setPlaceholderText(DEFAULT_DEMO_PROFILE["qr_website_url"])
+        form.addRow("QR website URL:", self.txt_demo_qr_website)
+
+        self.txt_demo_icassp_title = QLineEdit(self.grp_demo)
+        self.txt_demo_icassp_title.setPlaceholderText(DEFAULT_DEMO_PROFILE["icassp_title_text"])
+        form.addRow("Top-left conference text:", self.txt_demo_icassp_title)
+
+        self.txt_demo_authors = QLineEdit(self.grp_demo)
+        self.txt_demo_authors.setPlaceholderText(DEFAULT_DEMO_PROFILE["authors_text"])
+        form.addRow("Authors text:", self.txt_demo_authors)
+
+        self.txt_demo_university = QLineEdit(self.grp_demo)
+        self.txt_demo_university.setPlaceholderText(DEFAULT_DEMO_PROFILE["university_text"])
+        form.addRow("University text:", self.txt_demo_university)
+
         help_label = QLabel(
             "Used by Wi-Fi Scenario 'Demo' for each CSI Capture button press.",
             self.grp_demo,
@@ -6236,6 +6312,42 @@ class ConfigDialog(QDialog):
                     )
                 )
             )
+        if hasattr(self, "txt_demo_qr_website"):
+            self.txt_demo_qr_website.setText(
+                str(
+                    profile.get(
+                        "qr_website_url",
+                        DEFAULT_DEMO_PROFILE["qr_website_url"],
+                    )
+                )
+            )
+        if hasattr(self, "txt_demo_icassp_title"):
+            self.txt_demo_icassp_title.setText(
+                str(
+                    profile.get(
+                        "icassp_title_text",
+                        DEFAULT_DEMO_PROFILE["icassp_title_text"],
+                    )
+                )
+            )
+        if hasattr(self, "txt_demo_authors"):
+            self.txt_demo_authors.setText(
+                str(
+                    profile.get(
+                        "authors_text",
+                        DEFAULT_DEMO_PROFILE["authors_text"],
+                    )
+                )
+            )
+        if hasattr(self, "txt_demo_university"):
+            self.txt_demo_university.setText(
+                str(
+                    profile.get(
+                        "university_text",
+                        DEFAULT_DEMO_PROFILE["university_text"],
+                    )
+                )
+            )
         self._set_profile_editable("demo", not _is_default_profile("demo", name))
 
     def _update_hand_controls_state(self):
@@ -7213,6 +7325,26 @@ class ConfigDialog(QDialog):
             )
         if hasattr(self, "txt_demo_qr_image_path"):
             profile["qr_code_image_path"] = self.txt_demo_qr_image_path.text().strip()
+        if hasattr(self, "txt_demo_qr_website"):
+            profile["qr_website_url"] = (
+                self.txt_demo_qr_website.text().strip()
+                or DEFAULT_DEMO_PROFILE["qr_website_url"]
+            )
+        if hasattr(self, "txt_demo_icassp_title"):
+            profile["icassp_title_text"] = (
+                self.txt_demo_icassp_title.text().strip()
+                or DEFAULT_DEMO_PROFILE["icassp_title_text"]
+            )
+        if hasattr(self, "txt_demo_authors"):
+            profile["authors_text"] = (
+                self.txt_demo_authors.text().strip()
+                or DEFAULT_DEMO_PROFILE["authors_text"]
+            )
+        if hasattr(self, "txt_demo_university"):
+            profile["university_text"] = (
+                self.txt_demo_university.text().strip()
+                or DEFAULT_DEMO_PROFILE["university_text"]
+            )
 
     def _update_current_wifi_from_ui(self):
         name = self.current_wifi_profile_name
