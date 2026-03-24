@@ -281,7 +281,7 @@ class ProcessPcap:
         # csi_data = np.fft.fftshift(csi_data, axes=1) # Need to figure out the axis
         # Club packets based on antennas to form 192 dim vector per packet
         total_pkts = csi_data.shape[0]
-        csi_clubbed = np.zeros((total_pkts, self.num_cores * self.nfft), dtype=np.complex_)
+        csi_clubbed = np.zeros((total_pkts, self.num_cores * self.nfft), dtype=np.complex128)
         pkt_idx = 0
         cores_written = 0
         for i in range(total_pkts):
