@@ -6,6 +6,7 @@ from copy import deepcopy
 from PyQt5.QtWidgets import QApplication, QDialog
 
 from MainWindow import MainWindow
+from demo_window import DemoWindow
 from csi_capture_window import CSICaptureStartupDialog
 from config_window import (
     load_participant_profiles,
@@ -17,6 +18,7 @@ from config_window import (
     load_camera_profiles,
     load_depth_camera_profiles,
     load_wifi_profiles,
+    load_demo_profiles,
     load_time_profiles,
     save_participant_profiles,
     save_experiment_profiles,
@@ -27,6 +29,7 @@ from config_window import (
     save_camera_profiles,
     save_depth_camera_profiles,
     save_wifi_profiles,
+    save_demo_profiles,
     save_time_profiles,
     save_selected_profile_choices,
     ConfigDialog,
@@ -121,6 +124,7 @@ def main(argv: list[str] | None = None):
     camera_profiles = load_camera_profiles(experiment_profiles)
     depth_camera_profiles = load_depth_camera_profiles()
     wifi_profiles = load_wifi_profiles()
+    demo_profiles = load_demo_profiles()
     time_profiles = load_time_profiles()
 
     cfg = ConfigDialog(
@@ -133,6 +137,7 @@ def main(argv: list[str] | None = None):
         depth_camera_profiles,
         ui_profiles,
         wifi_profiles,
+        demo_profiles,
         time_profiles,
     )
     result = cfg.exec_()
@@ -149,6 +154,7 @@ def main(argv: list[str] | None = None):
     camera_profiles = cfg.get_camera_profiles()
     depth_camera_profiles = cfg.get_depth_camera_profiles()
     wifi_profiles = cfg.get_wifi_profiles()
+    demo_profiles = cfg.get_demo_profiles()
     time_profiles = cfg.get_time_profiles()
 
     selected_participant = cfg.get_selected_participant_name()
@@ -160,6 +166,7 @@ def main(argv: list[str] | None = None):
     selected_voice = cfg.get_selected_voice_profile_name()
     selected_ui = cfg.get_selected_ui_profile_name()
     selected_wifi = cfg.get_selected_wifi_profile_name()
+    selected_demo = cfg.get_selected_demo_profile_name()
     selected_time = cfg.get_selected_time_profile_name()
 
     save_selected_profile_choices(
@@ -173,6 +180,7 @@ def main(argv: list[str] | None = None):
             "voice": selected_voice,
             "ui": selected_ui,
             "wifi": selected_wifi,
+            "demo": selected_demo,
             "time": selected_time,
         }
     )
@@ -186,6 +194,7 @@ def main(argv: list[str] | None = None):
     save_camera_profiles(camera_profiles)
     save_depth_camera_profiles(depth_camera_profiles)
     save_wifi_profiles(wifi_profiles)
+    save_demo_profiles(demo_profiles)
     save_time_profiles(time_profiles)
 
     subject = deepcopy(participant_profiles[selected_participant])
@@ -224,6 +233,7 @@ def main(argv: list[str] | None = None):
 
     voice_profile = voice_profiles.get(selected_voice, {})
     wifi_profile = wifi_profiles.get(selected_wifi, [])
+    demo_profile = demo_profiles.get(selected_demo, {})
     time_profile = time_profiles.get(selected_time, {})
     time_ref = time_reference.build_time_reference(time_profile)
     time_reference.set_global_time_reference(time_ref)
@@ -247,7 +257,7 @@ def main(argv: list[str] | None = None):
     scenario = str(wifi_profile.get("csi_capture_scenario", "scenario_2")).lower()
     access_points = wifi_profile.get("access_points", []) if wifi_profile else []
     wifi_enabled = bool(access_points) and scenario != "no_collection"
-    if wifi_enabled:
+    if wifi_enabled and scenario != "demo":
         expected_duration = _compute_expected_duration(experiment, actions)
         if scenario == "scenario_1":
             capture_duration = expected_duration
@@ -273,21 +283,29 @@ def main(argv: list[str] | None = None):
             sys.exit(1)
         wifi_capture_info = getattr(capture_dialog, "routers_info", [])
 
-    win = MainWindow(
-        experiment,
-        subject,
-        actions,
-        voice_profile=voice_profile,
-        wifi_profile=wifi_profile,
-        camera_profile=camera_profile,
-        depth_camera_profile=depth_camera_profile,
-        ui_profile=ui_profile,
-        environment_profile=environment_profile,
-        prestarted_wifi=wifi_capture_info if wifi_enabled else [],
-        start_wifi_capture=wifi_enabled and not bool(wifi_capture_info),
-        results_dir=results_dir,
-        time_reference=time_ref,
-    )
+    if scenario == "demo":
+        win = DemoWindow(
+            subject=subject,
+            wifi_profile=wifi_profile,
+            demo_profile=demo_profile,
+            results_dir=results_dir,
+        )
+    else:
+        win = MainWindow(
+            experiment,
+            subject,
+            actions,
+            voice_profile=voice_profile,
+            wifi_profile=wifi_profile,
+            camera_profile=camera_profile,
+            depth_camera_profile=depth_camera_profile,
+            ui_profile=ui_profile,
+            environment_profile=environment_profile,
+            prestarted_wifi=wifi_capture_info if wifi_enabled else [],
+            start_wifi_capture=wifi_enabled and not bool(wifi_capture_info),
+            results_dir=results_dir,
+            time_reference=time_ref,
+        )
     win.show()
 
     sys.exit(app.exec_())
