@@ -391,6 +391,8 @@ DEFAULT_TIME_PROFILE = {
 DEFAULT_DEMO_PROFILE = {
     "capture_duration_seconds": 5.0,
     "apply_hampel_to_ratio_phase": False,
+    "demo_title_text": "Doppler Radiance Fields (DoRF) for Robust Wi-Fi Sensing and Human Activity Recognition",
+    "qr_code_image_path": "",
 }
 
 DEFAULT_WIFI_AP = {
@@ -880,6 +882,14 @@ def _load_demo_profiles_from_csv():
                         profile["apply_hampel_to_ratio_phase"],
                     )
                 )
+                profile["demo_title_text"] = (
+                    row.get("demo_title_text")
+                    or profile["demo_title_text"]
+                ).strip() or DEFAULT_DEMO_PROFILE["demo_title_text"]
+                profile["qr_code_image_path"] = (
+                    row.get("qr_code_image_path")
+                    or profile["qr_code_image_path"]
+                ).strip()
                 profiles[profile_name] = profile
     except Exception:
         return {}
@@ -1767,6 +1777,8 @@ def save_demo_profiles(profiles: dict):
                 "profile_name",
                 "capture_duration_seconds",
                 "apply_hampel_to_ratio_phase",
+                "demo_title_text",
+                "qr_code_image_path",
             ]
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
@@ -1788,6 +1800,21 @@ def save_demo_profiles(profiles: dict):
                                 DEFAULT_DEMO_PROFILE["apply_hampel_to_ratio_phase"],
                             )
                         ),
+                        "demo_title_text": (
+                            str(
+                                profile.get(
+                                    "demo_title_text",
+                                    DEFAULT_DEMO_PROFILE["demo_title_text"],
+                                )
+                            ).strip()
+                            or DEFAULT_DEMO_PROFILE["demo_title_text"]
+                        ),
+                        "qr_code_image_path": str(
+                            profile.get(
+                                "qr_code_image_path",
+                                DEFAULT_DEMO_PROFILE["qr_code_image_path"],
+                            )
+                        ).strip(),
                     }
                 )
     except Exception:
@@ -4061,6 +4088,14 @@ class ConfigDialog(QDialog):
         )
         form.addRow("", self.chk_demo_hampel_ratio_phase)
 
+        self.txt_demo_title = QLineEdit(self.grp_demo)
+        self.txt_demo_title.setPlaceholderText(DEFAULT_DEMO_PROFILE["demo_title_text"])
+        form.addRow("Demo window title:", self.txt_demo_title)
+
+        self.txt_demo_qr_image_path = QLineEdit(self.grp_demo)
+        self.txt_demo_qr_image_path.setPlaceholderText("/path/to/qr-code.png")
+        form.addRow("QR image path:", self.txt_demo_qr_image_path)
+
         help_label = QLabel(
             "Used by Wi-Fi Scenario 'Demo' for each CSI Capture button press.",
             self.grp_demo,
@@ -6183,6 +6218,24 @@ class ConfigDialog(QDialog):
                     )
                 )
             )
+        if hasattr(self, "txt_demo_title"):
+            self.txt_demo_title.setText(
+                str(
+                    profile.get(
+                        "demo_title_text",
+                        DEFAULT_DEMO_PROFILE["demo_title_text"],
+                    )
+                )
+            )
+        if hasattr(self, "txt_demo_qr_image_path"):
+            self.txt_demo_qr_image_path.setText(
+                str(
+                    profile.get(
+                        "qr_code_image_path",
+                        DEFAULT_DEMO_PROFILE["qr_code_image_path"],
+                    )
+                )
+            )
         self._set_profile_editable("demo", not _is_default_profile("demo", name))
 
     def _update_hand_controls_state(self):
@@ -7153,6 +7206,13 @@ class ConfigDialog(QDialog):
             profile["apply_hampel_to_ratio_phase"] = bool(
                 self.chk_demo_hampel_ratio_phase.isChecked()
             )
+        if hasattr(self, "txt_demo_title"):
+            profile["demo_title_text"] = (
+                self.txt_demo_title.text().strip()
+                or DEFAULT_DEMO_PROFILE["demo_title_text"]
+            )
+        if hasattr(self, "txt_demo_qr_image_path"):
+            profile["qr_code_image_path"] = self.txt_demo_qr_image_path.text().strip()
 
     def _update_current_wifi_from_ui(self):
         name = self.current_wifi_profile_name

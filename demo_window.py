@@ -12,6 +12,7 @@ import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
     QCheckBox,
     QFormLayout,
@@ -21,6 +22,7 @@ from PyQt5.QtWidgets import (
     QProgressDialog,
     QPushButton,
     QScrollArea,
+    QFrame,
     QSizePolicy,
     QVBoxLayout,
     QWidget,
@@ -69,10 +71,34 @@ class DemoWindow(QWidget):
 
     def _build_ui(self):
         self.setWindowTitle("Demo Window")
-        self.resize(1200, 800)
+        self.resize(1280, 840)
         root = QVBoxLayout(self)
+        root.setSpacing(12)
+
+        header_row = QHBoxLayout()
+        header_row.addStretch(1)
+        self.title_label = QLabel(self._demo_title_text(), self)
+        self.title_label.setAlignment(Qt.AlignCenter)
+        self.title_label.setWordWrap(True)
+        self.title_label.setStyleSheet("font-size: 30px; font-weight: 700; color: #0b1f3a;")
+        header_row.addWidget(self.title_label, stretch=3)
+
+        logo_col = QVBoxLayout()
+        logo_col.setSpacing(2)
+        self.wirlab_logo_label = QLabel("WIRLab", self)
+        self.wirlab_logo_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.wirlab_logo_label.setStyleSheet("font-size: 28px; font-weight: 800; color: #0f5e2b;")
+        logo_col.addWidget(self.wirlab_logo_label)
+
+        self.icassp_logo_label = QLabel("ICASSP 2026", self)
+        self.icassp_logo_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.icassp_logo_label.setStyleSheet("font-size: 24px; font-weight: 700; color: #1e3a8a;")
+        logo_col.addWidget(self.icassp_logo_label)
+        header_row.addLayout(logo_col, stretch=1)
+        root.addLayout(header_row)
 
         self.status_label = QLabel("Ready for demo capture.", self)
+        self.status_label.setStyleSheet("font-size: 15px; color: #1f2937;")
         root.addWidget(self.status_label)
 
         stats_row = QFormLayout()
@@ -96,18 +122,79 @@ class DemoWindow(QWidget):
         self.plot_scroll = QScrollArea(self)
         self.plot_scroll.setWidgetResizable(True)
         self.plot_scroll.setWidget(self.canvas)
+        self.plot_scroll.setStyleSheet(
+            "QScrollArea {border: 1px solid #cfd8e3; border-radius: 10px; background: #ffffff;}"
+        )
         root.addWidget(self.plot_scroll, stretch=1)
 
+        bottom_row = QHBoxLayout()
         button_row = QHBoxLayout()
         self.btn_capture = QPushButton("CSI Capture", self)
         self.btn_capture.clicked.connect(self._on_capture_clicked)
+        self.btn_capture.setStyleSheet(
+            "QPushButton {background-color: #16a34a; color: white; font-size: 16px; font-weight: 700; "
+            "padding: 10px 18px; border-radius: 8px;}"
+            "QPushButton:hover {background-color: #15803d;}"
+            "QPushButton:disabled {background-color: #86efac; color: #f8fafc;}"
+        )
         button_row.addWidget(self.btn_capture)
 
         self.btn_close = QPushButton("Close Window", self)
         self.btn_close.clicked.connect(self.close)
+        self.btn_close.setStyleSheet(
+            "QPushButton {background-color: #2563eb; color: white; font-size: 15px; font-weight: 600; "
+            "padding: 10px 18px; border-radius: 8px;}"
+            "QPushButton:hover {background-color: #1d4ed8;}"
+        )
         button_row.addWidget(self.btn_close)
         button_row.addStretch(1)
-        root.addLayout(button_row)
+
+        bottom_row.addLayout(button_row, stretch=3)
+
+        self.qr_placeholder = QLabel(self)
+        self.qr_placeholder.setFixedSize(200, 200)
+        self.qr_placeholder.setAlignment(Qt.AlignCenter)
+        self.qr_placeholder.setFrameStyle(QFrame.Box | QFrame.Plain)
+        self.qr_placeholder.setStyleSheet(
+            "QLabel {border: 2px dashed #94a3b8; border-radius: 10px; background: #f8fafc; "
+            "color: #475569; font-size: 14px; font-weight: 600;}"
+        )
+        self._update_qr_placeholder()
+
+        qr_container = QVBoxLayout()
+        qr_label = QLabel("QR Code", self)
+        qr_label.setAlignment(Qt.AlignCenter)
+        qr_label.setStyleSheet("font-size: 14px; font-weight: 700; color: #1f2937;")
+        qr_container.addWidget(qr_label)
+        qr_container.addWidget(self.qr_placeholder, alignment=Qt.AlignRight)
+        bottom_row.addLayout(qr_container, stretch=1)
+
+        root.addLayout(bottom_row)
+
+    def _demo_title_text(self) -> str:
+        text = str(self.demo_profile.get("demo_title_text") or "").strip()
+        return text or (
+            "Doppler Radiance Fields (DoRF) for Robust Wi-Fi Sensing and Human Activity Recognition"
+        )
+
+    def _qr_image_path(self) -> str:
+        return str(self.demo_profile.get("qr_code_image_path") or "").strip()
+
+    def _update_qr_placeholder(self) -> None:
+        path = self._qr_image_path()
+        if path and Path(path).exists():
+            pixmap = QPixmap(path)
+            if not pixmap.isNull():
+                self.qr_placeholder.setPixmap(
+                    pixmap.scaled(180, 180, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                )
+                self.qr_placeholder.setText("")
+                return
+        if path:
+            self.qr_placeholder.setText("QR image not found\nSet a valid image path\nin Demo profile")
+        else:
+            self.qr_placeholder.setText("QR code placeholder\nSet image path\nin Demo profile")
+        self.qr_placeholder.setPixmap(QPixmap())
 
     def _capture_duration(self) -> float:
         return max(float(self.demo_profile.get("capture_duration_seconds", 5.0)), 1.0)
