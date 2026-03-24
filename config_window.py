@@ -390,6 +390,7 @@ DEFAULT_TIME_PROFILE = {
 }
 DEFAULT_DEMO_PROFILE = {
     "capture_duration_seconds": 5.0,
+    "apply_hampel_to_ratio_phase": False,
 }
 
 DEFAULT_WIFI_AP = {
@@ -873,6 +874,12 @@ def _load_demo_profiles_from_csv():
                     )
                 except (TypeError, ValueError):
                     pass
+                profile["apply_hampel_to_ratio_phase"] = _as_bool(
+                    row.get(
+                        "apply_hampel_to_ratio_phase",
+                        profile["apply_hampel_to_ratio_phase"],
+                    )
+                )
                 profiles[profile_name] = profile
     except Exception:
         return {}
@@ -1759,6 +1766,7 @@ def save_demo_profiles(profiles: dict):
             fieldnames = [
                 "profile_name",
                 "capture_duration_seconds",
+                "apply_hampel_to_ratio_phase",
             ]
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
@@ -1772,6 +1780,12 @@ def save_demo_profiles(profiles: dict):
                             profile.get(
                                 "capture_duration_seconds",
                                 DEFAULT_DEMO_PROFILE["capture_duration_seconds"],
+                            )
+                        ),
+                        "apply_hampel_to_ratio_phase": bool(
+                            profile.get(
+                                "apply_hampel_to_ratio_phase",
+                                DEFAULT_DEMO_PROFILE["apply_hampel_to_ratio_phase"],
                             )
                         ),
                     }
@@ -4041,6 +4055,11 @@ class ConfigDialog(QDialog):
         self.spn_demo_capture_duration.setSingleStep(0.5)
         self.spn_demo_capture_duration.setSuffix(" s")
         form.addRow("Demo CSI capture duration:", self.spn_demo_capture_duration)
+        self.chk_demo_hampel_ratio_phase = QCheckBox(
+            "Apply Hampel filter to CSI ratio phase before plotting",
+            self.grp_demo,
+        )
+        form.addRow("", self.chk_demo_hampel_ratio_phase)
 
         help_label = QLabel(
             "Used by Wi-Fi Scenario 'Demo' for each CSI Capture button press.",
@@ -6155,6 +6174,15 @@ class ConfigDialog(QDialog):
                     )
                 )
             )
+        if hasattr(self, "chk_demo_hampel_ratio_phase"):
+            self.chk_demo_hampel_ratio_phase.setChecked(
+                bool(
+                    profile.get(
+                        "apply_hampel_to_ratio_phase",
+                        DEFAULT_DEMO_PROFILE["apply_hampel_to_ratio_phase"],
+                    )
+                )
+            )
         self._set_profile_editable("demo", not _is_default_profile("demo", name))
 
     def _update_hand_controls_state(self):
@@ -7121,6 +7149,10 @@ class ConfigDialog(QDialog):
             self.demo_profiles[name] = profile
         if hasattr(self, "spn_demo_capture_duration"):
             profile["capture_duration_seconds"] = float(self.spn_demo_capture_duration.value())
+        if hasattr(self, "chk_demo_hampel_ratio_phase"):
+            profile["apply_hampel_to_ratio_phase"] = bool(
+                self.chk_demo_hampel_ratio_phase.isChecked()
+            )
 
     def _update_current_wifi_from_ui(self):
         name = self.current_wifi_profile_name
