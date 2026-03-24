@@ -75,6 +75,7 @@ UI_FILE = CONFIGS_DIR / "ui_profiles.csv"
 WIFI_FILE = CONFIGS_DIR / "wifi_profiles.csv"
 ENVIRONMENT_FILE = CONFIGS_DIR / "environment_profiles.csv"
 TIME_FILE = CONFIGS_DIR / "time_profiles.csv"
+DEMO_FILE = CONFIGS_DIR / "demo_profiles.csv"
 DEPTH_CAMERA_FILE = CONFIGS_DIR / "depth_camera_profiles.csv"
 SELECTED_PROFILES_FILE = CONFIGS_DIR / "selected_profiles.json"
 SCRIPTS_DIR = Path("scripts")
@@ -387,6 +388,9 @@ DEFAULT_TIME_PROFILE = {
     "use_time_server": False,
     "time_server": "time.cloudflare.com",
 }
+DEFAULT_DEMO_PROFILE = {
+    "capture_duration_seconds": 5.0,
+}
 
 DEFAULT_WIFI_AP = {
     "name": "",
@@ -430,6 +434,7 @@ DEFAULT_UI_PROFILE_NAME = "default_ui"
 DEFAULT_WIFI_PROFILE_NAME = "default_wifi"
 DEFAULT_ENVIRONMENT_PROFILE_NAME = "default_environment"
 DEFAULT_TIME_PROFILE_NAME = "default_time"
+DEFAULT_DEMO_PROFILE_NAME = "default_demo"
 
 FREQUENCY_CHANNELS = {
     "2.4 GHz": [str(ch) for ch in range(1, 15)],
@@ -500,6 +505,7 @@ DEFAULT_PROFILE_NAMES = {
     "wifi": DEFAULT_WIFI_PROFILE_NAME,
     "environment": DEFAULT_ENVIRONMENT_PROFILE_NAME,
     "time": DEFAULT_TIME_PROFILE_NAME,
+    "demo": DEFAULT_DEMO_PROFILE_NAME,
 }
 
 
@@ -838,6 +844,35 @@ def _load_time_profiles_from_csv():
                 time_server = (row.get("time_server") or "").strip()
                 if time_server:
                     profile["time_server"] = time_server
+                profiles[profile_name] = profile
+    except Exception:
+        return {}
+
+    return profiles
+
+
+def _load_demo_profiles_from_csv():
+    profiles = {}
+    if not DEMO_FILE.exists():
+        return profiles
+
+    try:
+        with DEMO_FILE.open("r", encoding="utf-8", newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                profile_name = (row.get("profile_name") or "").strip()
+                if not profile_name:
+                    continue
+                profile = deepcopy(DEFAULT_DEMO_PROFILE)
+                try:
+                    profile["capture_duration_seconds"] = float(
+                        row.get(
+                            "capture_duration_seconds",
+                            profile["capture_duration_seconds"],
+                        )
+                    )
+                except (TypeError, ValueError):
+                    pass
                 profiles[profile_name] = profile
     except Exception:
         return {}
@@ -1393,6 +1428,19 @@ def load_time_profiles():
     )
 
 
+def load_demo_profiles():
+    _ensure_default_profile_file(
+        DEMO_FILE,
+        {DEFAULT_DEMO_PROFILE_NAME: deepcopy(DEFAULT_DEMO_PROFILE)},
+        save_demo_profiles,
+    )
+    return _profiles_with_default(
+        _load_demo_profiles_from_csv(),
+        DEFAULT_DEMO_PROFILE_NAME,
+        DEFAULT_DEMO_PROFILE,
+    )
+
+
 def load_experiment_profiles():
     _ensure_default_profile_file(
         EXPERIMENTS_FILE,
@@ -1697,6 +1745,34 @@ def save_time_profiles(profiles: dict):
                         ),
                         "time_server": profile.get(
                             "time_server", DEFAULT_TIME_PROFILE["time_server"]
+                        ),
+                    }
+                )
+    except Exception:
+        pass
+
+
+def save_demo_profiles(profiles: dict):
+    _ensure_configs_dir()
+    try:
+        with DEMO_FILE.open("w", encoding="utf-8", newline="") as f:
+            fieldnames = [
+                "profile_name",
+                "capture_duration_seconds",
+            ]
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            for profile_name, profile in profiles.items():
+                if not isinstance(profile, dict):
+                    continue
+                writer.writerow(
+                    {
+                        "profile_name": profile_name,
+                        "capture_duration_seconds": float(
+                            profile.get(
+                                "capture_duration_seconds",
+                                DEFAULT_DEMO_PROFILE["capture_duration_seconds"],
+                            )
                         ),
                     }
                 )
@@ -2232,6 +2308,7 @@ class ConfigDialog(QDialog):
         ui_profiles: dict = None,
         wifi_profiles: dict = None,
         time_profiles: dict = None,
+        demo_profiles: dict = None,
         parent=None,
     ):
         super().__init__(parent)
@@ -2321,6 +2398,12 @@ class ConfigDialog(QDialog):
             self.time_profiles = {
                 DEFAULT_TIME_PROFILE_NAME: deepcopy(DEFAULT_TIME_PROFILE)
             }
+        if demo_profiles:
+            self.demo_profiles = deepcopy(demo_profiles)
+        else:
+            self.demo_profiles = {
+                DEFAULT_DEMO_PROFILE_NAME: deepcopy(DEFAULT_DEMO_PROFILE)
+            }
 
         # Ensure gender options contain the genders already stored
         for subject in self.participant_profiles.values():
@@ -2379,6 +2462,11 @@ class ConfigDialog(QDialog):
             self.time_profiles,
             DEFAULT_TIME_PROFILE_NAME,
         )
+        self.current_demo_profile_name = self._resolve_initial_profile_choice(
+            saved_choices.get("demo"),
+            self.demo_profiles,
+            DEFAULT_DEMO_PROFILE_NAME,
+        )
 
         self.wifi_manager = WiFiCSIManager()
 
@@ -2414,6 +2502,7 @@ class ConfigDialog(QDialog):
         self._populate_ui_combo()
         self._populate_wifi_combo()
         self._populate_time_combo()
+        self._populate_demo_combo()
 
         self._load_participant_into_ui(self.current_participant_name)
         self._load_experiment_into_ui(self.current_experiment_name)
@@ -2425,6 +2514,7 @@ class ConfigDialog(QDialog):
         self._load_ui_into_ui(self.current_ui_profile_name)
         self._load_wifi_into_ui(self.current_wifi_profile_name)
         self._load_time_into_ui(self.current_time_profile_name)
+        self._load_demo_into_ui(self.current_demo_profile_name)
         self._set_locked_state(self._settings_locked)
 
     def _ensure_gender_option(self, value: str):
@@ -2544,6 +2634,7 @@ class ConfigDialog(QDialog):
         self.tabs.addTab(self._create_voice_tab(), "Voice")
         self.tabs.addTab(self._create_ui_tab(), "User Interface")
         self.tabs.addTab(self._create_time_tab(), "Time")
+        self.tabs.addTab(self._create_demo_tab(), "Demo")
         self.tabs.addTab(self._create_wifi_tab(), "Wi-Fi")
         self.tabs.addTab(self._create_actions_tab(), "Actions")
         main_layout.addWidget(self.tabs, stretch=1)
@@ -3820,6 +3911,9 @@ class ConfigDialog(QDialog):
             "Scenario 2: Action-adjacent CSI captures", userData="scenario_2"
         )
         self.cmb_csi_scenario.addItem(
+            "Demo: Real-time manual CSI capture", userData="demo"
+        )
+        self.cmb_csi_scenario.addItem(
             "No CSI collection (skip router connections)",
             userData="no_collection",
         )
@@ -3905,6 +3999,57 @@ class ConfigDialog(QDialog):
         wifi_layout.addLayout(btn_row_wifi)
 
         layout.addWidget(self.grp_wifi)
+        layout.addStretch(1)
+        return tab
+
+    def _create_demo_tab(self):
+        tab = QWidget(self)
+        layout = QVBoxLayout(tab)
+
+        row = QHBoxLayout()
+        row.addWidget(QLabel("Demo profile:", tab))
+        self.cmb_demo_profile = QComboBox(tab)
+        self.cmb_demo_profile.currentTextChanged.connect(self._on_demo_profile_changed)
+        row.addWidget(self.cmb_demo_profile, stretch=1)
+
+        self.btn_demo_new = QPushButton("New", tab)
+        self.btn_demo_new.clicked.connect(self._on_new_demo_profile)
+        row.addWidget(self.btn_demo_new)
+
+        self.btn_demo_duplicate = QPushButton("Duplicate", tab)
+        self.btn_demo_duplicate.clicked.connect(self._on_duplicate_demo_profile)
+        row.addWidget(self.btn_demo_duplicate)
+
+        self.btn_demo_rename = QPushButton("Rename", tab)
+        self.btn_demo_rename.clicked.connect(self._on_rename_demo_profile)
+        row.addWidget(self.btn_demo_rename)
+
+        self.btn_demo_delete = QPushButton("Delete", tab)
+        self.btn_demo_delete.clicked.connect(self._on_delete_demo_profile)
+        row.addWidget(self.btn_demo_delete)
+
+        self.btn_demo_save = QPushButton("Save", tab)
+        self.btn_demo_save.clicked.connect(self._on_save_demo_profiles)
+        row.addWidget(self.btn_demo_save)
+
+        layout.addLayout(row)
+
+        self.grp_demo = QGroupBox("Demo Settings", tab)
+        form = QFormLayout(self.grp_demo)
+        self.spn_demo_capture_duration = QDoubleSpinBox(self.grp_demo)
+        self.spn_demo_capture_duration.setRange(1.0, 300.0)
+        self.spn_demo_capture_duration.setSingleStep(0.5)
+        self.spn_demo_capture_duration.setSuffix(" s")
+        form.addRow("Demo CSI capture duration:", self.spn_demo_capture_duration)
+
+        help_label = QLabel(
+            "Used by Wi-Fi Scenario 'Demo' for each CSI Capture button press.",
+            self.grp_demo,
+        )
+        help_label.setWordWrap(True)
+        form.addRow("", help_label)
+
+        layout.addWidget(self.grp_demo)
         layout.addStretch(1)
         return tab
 
@@ -4147,6 +4292,18 @@ class ConfigDialog(QDialog):
         self.cmb_time_profile.setCurrentIndex(max(idx, 0))
         self.cmb_time_profile.blockSignals(False)
 
+    def _populate_demo_combo(self):
+        self.cmb_demo_profile.blockSignals(True)
+        self.cmb_demo_profile.clear()
+        for name in self.demo_profiles.keys():
+            self.cmb_demo_profile.addItem(name)
+        idx = self.cmb_demo_profile.findText(self.current_demo_profile_name)
+        if idx < 0 and self.cmb_demo_profile.count() > 0:
+            idx = 0
+            self.current_demo_profile_name = self.cmb_demo_profile.itemText(idx)
+        self.cmb_demo_profile.setCurrentIndex(max(idx, 0))
+        self.cmb_demo_profile.blockSignals(False)
+
     def _set_profile_editable(self, profile_type: str, editable: bool):
         widget_map = {
             "participant": [
@@ -4203,6 +4360,7 @@ class ConfigDialog(QDialog):
                 getattr(self, "grp_wifi", None),
             ],
             "time": [getattr(self, "grp_time_server", None)],
+            "demo": [getattr(self, "grp_demo", None)],
         }
         button_map = {
             "participant": [
@@ -4260,6 +4418,11 @@ class ConfigDialog(QDialog):
                 getattr(self, "btn_time_rename", None),
                 getattr(self, "btn_time_save", None),
             ],
+            "demo": [
+                getattr(self, "btn_demo_delete", None),
+                getattr(self, "btn_demo_rename", None),
+                getattr(self, "btn_demo_save", None),
+            ],
         }
 
         for widget in widget_map.get(profile_type, []):
@@ -4297,6 +4460,13 @@ class ConfigDialog(QDialog):
         self._update_current_time_from_ui()
         self.current_time_profile_name = new_name
         self._load_time_into_ui(new_name)
+
+    def _on_demo_profile_changed(self, new_name: str):
+        if not new_name:
+            return
+        self._update_current_demo_from_ui()
+        self.current_demo_profile_name = new_name
+        self._load_demo_into_ui(new_name)
 
     # ------------------------------------------------------------------
     # New / duplicate / delete / save helpers
@@ -5178,6 +5348,76 @@ class ConfigDialog(QDialog):
         save_time_profiles(self.time_profiles)
         QMessageBox.information(self, "Saved", "Time profiles have been saved.")
 
+    def _on_new_demo_profile(self):
+        name, ok = QInputDialog.getText(
+            self,
+            "New Demo Profile",
+            "Enter a name for the new demo profile:",
+            text="demo_profile",
+        )
+        if not ok:
+            return
+        name = name.strip()
+        if not name:
+            return
+        if name in self.demo_profiles:
+            QMessageBox.warning(self, "Duplicate Name", f"A demo profile called '{name}' already exists.")
+            return
+        self.demo_profiles[name] = deepcopy(DEFAULT_DEMO_PROFILE)
+        self.current_demo_profile_name = name
+        self._populate_demo_combo()
+        self._load_demo_into_ui(name)
+
+    def _on_duplicate_demo_profile(self):
+        if not self.current_demo_profile_name:
+            return
+        base_name = self.current_demo_profile_name
+        new_name = self._create_unique_name(f"{base_name}_copy", self.demo_profiles)
+        self.demo_profiles[new_name] = deepcopy(self.demo_profiles[base_name])
+        self.current_demo_profile_name = new_name
+        self._populate_demo_combo()
+        self._load_demo_into_ui(new_name)
+
+    def _on_rename_demo_profile(self):
+        self._rename_profile(
+            "demo",
+            self.demo_profiles,
+            "current_demo_profile_name",
+            self._populate_demo_combo,
+            self._load_demo_into_ui,
+        )
+
+    def _on_delete_demo_profile(self):
+        if not self.current_demo_profile_name:
+            return
+        if _is_default_profile("demo", self.current_demo_profile_name):
+            QMessageBox.information(
+                self,
+                "Protected Profile",
+                "The default demo profile cannot be modified directly. Duplicate it to make changes.",
+            )
+            return
+        if len(self.demo_profiles) <= 1:
+            QMessageBox.warning(self, "Cannot Delete", "At least one demo profile must exist.")
+            return
+        reply = QMessageBox.question(
+            self,
+            "Delete Demo Profile",
+            f"Delete demo profile '{self.current_demo_profile_name}'?",
+            QMessageBox.Yes | QMessageBox.No,
+        )
+        if reply != QMessageBox.Yes:
+            return
+        self.demo_profiles.pop(self.current_demo_profile_name, None)
+        self.current_demo_profile_name = next(iter(self.demo_profiles.keys()))
+        self._populate_demo_combo()
+        self._load_demo_into_ui(self.current_demo_profile_name)
+
+    def _on_save_demo_profiles(self):
+        self._update_current_demo_from_ui()
+        save_demo_profiles(self.demo_profiles)
+        QMessageBox.information(self, "Saved", "Demo profiles have been saved.")
+
     def _on_add_wifi_ap(self):
         self._add_wifi_row()
 
@@ -5899,6 +6139,23 @@ class ConfigDialog(QDialog):
 
         self._start_time_sync()
         self._set_profile_editable("time", not _is_default_profile("time", name))
+
+    def _load_demo_into_ui(self, name: str):
+        profile = self.demo_profiles.get(name)
+        if not profile:
+            profile = deepcopy(DEFAULT_DEMO_PROFILE)
+            self.demo_profiles[name] = profile
+
+        if hasattr(self, "spn_demo_capture_duration"):
+            self.spn_demo_capture_duration.setValue(
+                float(
+                    profile.get(
+                        "capture_duration_seconds",
+                        DEFAULT_DEMO_PROFILE["capture_duration_seconds"],
+                    )
+                )
+            )
+        self._set_profile_editable("demo", not _is_default_profile("demo", name))
 
     def _update_hand_controls_state(self):
         camera_available = bool(
@@ -6852,6 +7109,19 @@ class ConfigDialog(QDialog):
             server = self.cmb_time_server.currentText().strip()
             profile["time_server"] = server or DEFAULT_TIME_PROFILE["time_server"]
 
+    def _update_current_demo_from_ui(self):
+        name = self.current_demo_profile_name
+        if not name:
+            return
+        if _is_default_profile("demo", name):
+            return
+        profile = self.demo_profiles.get(name)
+        if not profile:
+            profile = deepcopy(DEFAULT_DEMO_PROFILE)
+            self.demo_profiles[name] = profile
+        if hasattr(self, "spn_demo_capture_duration"):
+            profile["capture_duration_seconds"] = float(self.spn_demo_capture_duration.value())
+
     def _update_current_wifi_from_ui(self):
         name = self.current_wifi_profile_name
         if not name:
@@ -7056,6 +7326,10 @@ class ConfigDialog(QDialog):
         self._update_current_time_from_ui()
         return deepcopy(self.time_profiles)
 
+    def get_demo_profiles(self):
+        self._update_current_demo_from_ui()
+        return deepcopy(self.demo_profiles)
+
     def get_selected_participant_name(self):
         return self.current_participant_name
 
@@ -7085,6 +7359,9 @@ class ConfigDialog(QDialog):
 
     def get_selected_time_profile_name(self):
         return self.current_time_profile_name
+
+    def get_selected_demo_profile_name(self):
+        return self.current_demo_profile_name
 
     def _on_test_connections_clicked(self):
         self._update_current_wifi_from_ui()
