@@ -94,8 +94,62 @@ class DemoWindow(QWidget):
             capture_duration = self._capture_duration()
             capture_tag = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
             downloaded = []
+            capture_errors: list[str] = []
 
-            for router_entry in self.routers_info:
+            # Match Scenario 2 behavior: start transmitters before sniffers so
+            # sniffers receive packets while tcpdump is active.
+            ordered_routers = sorted(
+                self.routers_info,
+                key=lambda item: 1
+                if self.wifi_manager.is_sniffer(
+                    (dict(item.get("run_info") or {})).get("ap", {})
+                )
+                else 0,
+            )
+
+            capture_threads: list[threading.Thread] = []
+
+            def _capture_router(router_obj, *, duration: float, remote_directory: str, exp_name: str):
+                try:
+                    self.wifi_manager.start_csi_capture(
+                        router_obj,
+                        duration=duration,
+                        remote_directory=remote_directory,
+                        exp_name=exp_name,
+                        delete_prev_pcap=False,
+                    )
+                except Exception as exc:  # pragma: no cover - runtime/network behavior
+                    capture_errors.append(f"{exp_name}: {exc}")
+
+            for router_entry in ordered_routers:
+                run_info = dict(router_entry.get("run_info") or {})
+                ap = run_info.get("ap", {})
+                router = router_entry.get("router")
+                if router is None:
+                    continue
+                ap_name = ap.get("name") or ap.get("ssid") or "ap"
+                exp_name = f"demo_{self.wifi_manager.sanitize_ap_name(ap_name)}_{capture_tag}"
+                remote_dir = run_info.get("remote_dir", "/mnt/CSI_USB/")
+
+                run_info["exp_name"] = exp_name
+                router_entry["run_info"] = run_info
+                thread = threading.Thread(
+                    target=_capture_router,
+                    args=(router,),
+                    kwargs={
+                        "duration": capture_duration,
+                        "remote_directory": remote_dir,
+                        "exp_name": exp_name,
+                    },
+                    daemon=True,
+                )
+                thread.start()
+                capture_threads.append(thread)
+
+            for thread in capture_threads:
+                thread.join()
+
+            for router_entry in ordered_routers:
                 run_info = dict(router_entry.get("run_info") or {})
                 ap = run_info.get("ap", {})
                 if not self.wifi_manager.is_sniffer(ap):
@@ -104,17 +158,8 @@ class DemoWindow(QWidget):
                 if router is None:
                     continue
                 ap_name = ap.get("name") or ap.get("ssid") or "ap"
-                exp_name = f"demo_{self.wifi_manager.sanitize_ap_name(ap_name)}_{capture_tag}"
                 remote_dir = run_info.get("remote_dir", "/mnt/CSI_USB/")
-
-                self.wifi_manager.start_csi_capture(
-                    router,
-                    duration=capture_duration,
-                    remote_directory=remote_dir,
-                    exp_name=exp_name,
-                    delete_prev_pcap=False,
-                )
-
+                exp_name = run_info.get("exp_name") or f"demo_{self.wifi_manager.sanitize_ap_name(ap_name)}_{capture_tag}"
                 remote_listing = router.send_command(f"ls {remote_dir}")
                 pcap_files = [line.strip() for line in remote_listing]
                 candidates = self.wifi_manager.filter_matching_pcaps(pcap_files, exp_name)
@@ -133,15 +178,40 @@ class DemoWindow(QWidget):
                 downloaded.append((local_path, int(ap.get("bandwidth", "80").replace("MHz", "") or "80")))
 
             if not downloaded:
-                self.capture_finished.emit(False, "No PCAP file was downloaded from sniffers.")
+                error_suffix = f" Errors: {'; '.join(capture_errors)}" if capture_errors else ""
+                self.capture_finished.emit(False, f"No PCAP file was downloaded from sniffers.{error_suffix}")
                 return
 
-            self.plot_requested.emit(str(downloaded[0][0]), int(downloaded[0][1]))
-            self.capture_finished.emit(True, f"Capture complete: {downloaded[0][0].name}")
+            first_capture, first_bw = downloaded[0]
+            if not self._has_payload_packets(first_capture):
+                self.capture_finished.emit(
+                    False,
+                    (
+                        f"Downloaded PCAP is empty ({first_capture.name}). "
+                        "No CSI packets were captured. Please verify transmitter is running before sniffer capture."
+                    ),
+                )
+                return
+
+            self.plot_requested.emit(str(first_capture), int(first_bw))
+            self.capture_finished.emit(True, f"Capture complete: {first_capture.name}")
         except Exception as exc:  # pragma: no cover - network/runtime behavior
             self.capture_finished.emit(False, f"Demo capture failed: {exc}")
 
+    @staticmethod
+    def _has_payload_packets(pcap_path: Path) -> bool:
+        try:
+            # 24 bytes is a global pcap header-only file with zero packets.
+            return pcap_path.exists() and pcap_path.stat().st_size > 24
+        except Exception:
+            return False
+
     def _plot_ratio(self, pcap_path: Path, bandwidth_mhz: int):
+        if not self._has_payload_packets(pcap_path):
+            self.status_label.setText(
+                f"Cannot plot {pcap_path.name}: PCAP is empty (header only, no CSI packets)."
+            )
+            return
         processor = ProcessPcap(str(pcap_path.parent), bw=bandwidth_mhz, tx_loc=[0, 0])
         csi_data, time_pkts, _, _ = processor.process_pcap(str(pcap_path), bw=bandwidth_mhz)
         rx_count = getattr(processor, "num_cores", 1) or 1
