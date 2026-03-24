@@ -20,6 +20,7 @@ from PyQt5.QtWidgets import (
 )
 
 from pcap_reader import ProcessPcap
+from pcap_reader_ui import _read_ubilocate_csi
 from wifi_csi_manager import WiFiCSIManager
 
 
@@ -212,11 +213,31 @@ class DemoWindow(QWidget):
                 f"Cannot plot {pcap_path.name}: PCAP is empty (header only, no CSI packets)."
             )
             return
-        processor = ProcessPcap(str(pcap_path.parent), bw=bandwidth_mhz, tx_loc=[0, 0])
-        csi_data, time_pkts, _, _ = processor.process_pcap(str(pcap_path), bw=bandwidth_mhz)
-        rx_count = getattr(processor, "num_cores", 1) or 1
-        nfft = processor.nfft
-        csi_data = csi_data.reshape((-1, nfft, rx_count, 1))
+        csi_data: np.ndarray | None = None
+        time_pkts: np.ndarray | None = None
+        nfft = int(3.2 * bandwidth_mhz)
+
+        try:
+            # Match PCAP reader behavior for demo plotting by using the
+            # UbiLocate parser first.
+            csi_data, time_pkts, _ = _read_ubilocate_csi(
+                str(pcap_path), bw=bandwidth_mhz, is_4ss=True
+            )
+            if csi_data.size == 0:
+                raise ValueError("No UbiLocate CSI packets found")
+        except Exception:
+            # Fallback to Nexmon processing so existing captures continue to
+            # render even if they are not in UbiLocate format.
+            processor = ProcessPcap(str(pcap_path.parent), bw=bandwidth_mhz, tx_loc=[0, 0])
+            csi_data_raw, time_raw, _, _ = processor.process_pcap(str(pcap_path), bw=bandwidth_mhz)
+            rx_count = getattr(processor, "num_cores", 1) or 1
+            nfft = processor.nfft
+            csi_data = csi_data_raw.reshape((-1, nfft, rx_count, 1))
+            time_pkts = np.asarray(time_raw)
+
+        if csi_data is None or time_pkts is None or csi_data.size == 0:
+            self.status_label.setText(f"Unable to load CSI data from {pcap_path.name}.")
+            return
 
         stream = csi_data[:, min(23, nfft - 1), 0, 0]
         magnitude = np.abs(stream)
