@@ -1,0 +1,3 @@
+profile_name,capture_duration_seconds,apply_hampel_to_ratio_phase,demo_title_text,qr_code_image_path,qr_website_url,icassp_title_text,authors_text,university_text
+default_demo,5.0,False,Doppler Radiance Fields (DoRF) for Robust Wi-Fi Sensing and Human Activity Recognition,,https://dorf.navidhasanzadeh.com,IEEE ICASSP 2026,"Authors: Navid Hasanzadeh, Shahrokh Valaee",University of Toronto
+default_demo_copy,5.0,True,Doppler Radiance Fields (DoRF) for Robust Wi-Fi Sensing and Human Activity Recognition,/home/wirlab/Documents/CSI_APP_Demo/images/qrcode_dorf.navidhasanzadeh.com.png,https://dorf.navidhasanzadeh.com,IEEE ICASSP 2026,"Authors: Navid Hasanzadeh, Shahrokh Valaee",University of Toronto
