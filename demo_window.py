@@ -121,12 +121,6 @@ class DemoWindow(QWidget):
         self._update_qr_placeholder()
         logo_col.addWidget(self.qr_placeholder, alignment=Qt.AlignRight)
 
-        self.qr_website_label = QLabel(self._qr_website_text(), self)
-        self.qr_website_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.qr_website_label.setStyleSheet("font-size: 11px; font-weight: 600; color: #2563eb;")
-        self.qr_website_label.setWordWrap(True)
-        logo_col.addWidget(self.qr_website_label, alignment=Qt.AlignRight)
-
         self.wirlab_logo_label = QLabel("WIRLab", self)
         self.wirlab_logo_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.wirlab_logo_label.setStyleSheet("font-size: 20px; font-weight: 800; color: #0f5e2b;")
@@ -202,6 +196,12 @@ class DemoWindow(QWidget):
         self._start_clock_updates()
 
         bottom_row = QHBoxLayout()
+        self.qr_website_label = QLabel(self._qr_website_text(), self)
+        self.qr_website_label.setAlignment(Qt.AlignCenter)
+        self.qr_website_label.setStyleSheet("font-size: 12px; font-weight: 700; color: #2563eb;")
+        self.qr_website_label.setWordWrap(True)
+        self.qr_website_label.setMaximumWidth(500)
+
         button_row = QHBoxLayout()
         self.btn_capture = QPushButton("CSI Capture", self)
         self.btn_capture.clicked.connect(self._on_capture_clicked)
@@ -224,6 +224,8 @@ class DemoWindow(QWidget):
         button_row.addStretch(1)
 
         bottom_row.addLayout(button_row, stretch=3)
+        bottom_row.addWidget(self.qr_website_label, stretch=2, alignment=Qt.AlignHCenter | Qt.AlignBottom)
+        bottom_row.addStretch(1)
 
         root.addLayout(bottom_row)
 
