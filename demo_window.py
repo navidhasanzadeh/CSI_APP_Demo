@@ -75,42 +75,43 @@ class DemoWindow(QWidget):
         self.setWindowTitle("Demo Window")
         self.resize(1280, 840)
         root = QVBoxLayout(self)
-        root.setSpacing(12)
+        root.setContentsMargins(8, 8, 8, 8)
+        root.setSpacing(6)
 
         header_row = QHBoxLayout()
         header_row.setContentsMargins(0, 0, 0, 0)
-        header_row.setSpacing(16)
+        header_row.setSpacing(10)
         header_left_col = QVBoxLayout()
-        header_left_col.setSpacing(2)
+        header_left_col.setSpacing(1)
         self.icassp_logo_label = QLabel(self._icassp_title_text(), self)
         self.icassp_logo_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.icassp_logo_label.setStyleSheet("font-size: 24px; font-weight: 700; color: #1e3a8a;")
+        self.icassp_logo_label.setStyleSheet("font-size: 18px; font-weight: 700; color: #1e3a8a;")
         header_left_col.addWidget(self.icassp_logo_label)
 
         self.authors_label = QLabel(self._authors_text(), self)
         self.authors_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.authors_label.setWordWrap(True)
-        self.authors_label.setStyleSheet("font-size: 14px; font-weight: 600; color: #111827;")
+        self.authors_label.setStyleSheet("font-size: 12px; font-weight: 600; color: #111827;")
         header_left_col.addWidget(self.authors_label)
 
         self.university_label = QLabel(self._university_text(), self)
         self.university_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.university_label.setWordWrap(True)
-        self.university_label.setStyleSheet("font-size: 14px; font-weight: 600; color: #111827;")
+        self.university_label.setStyleSheet("font-size: 12px; font-weight: 600; color: #111827;")
         header_left_col.addWidget(self.university_label)
         header_row.addLayout(header_left_col, stretch=2)
 
         self.title_label = QLabel(self._demo_title_text(), self)
         self.title_label.setAlignment(Qt.AlignCenter)
         self.title_label.setWordWrap(True)
-        self.title_label.setStyleSheet("font-size: 30px; font-weight: 700; color: #0b1f3a;")
+        self.title_label.setStyleSheet("font-size: 22px; font-weight: 700; color: #0b1f3a;")
         header_row.addWidget(self.title_label, stretch=4)
 
         logo_col = QVBoxLayout()
-        logo_col.setSpacing(6)
+        logo_col.setSpacing(2)
         logo_col.setAlignment(Qt.AlignRight | Qt.AlignTop)
         self.qr_placeholder = QLabel(self)
-        self.qr_placeholder.setFixedSize(180, 180)
+        self.qr_placeholder.setFixedSize(120, 120)
         self.qr_placeholder.setAlignment(Qt.AlignCenter)
         self.qr_placeholder.setFrameStyle(QFrame.Box | QFrame.Plain)
         self.qr_placeholder.setStyleSheet(
@@ -122,19 +123,19 @@ class DemoWindow(QWidget):
 
         self.qr_website_label = QLabel(self._qr_website_text(), self)
         self.qr_website_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.qr_website_label.setStyleSheet("font-size: 13px; font-weight: 600; color: #2563eb;")
+        self.qr_website_label.setStyleSheet("font-size: 11px; font-weight: 600; color: #2563eb;")
         self.qr_website_label.setWordWrap(True)
         logo_col.addWidget(self.qr_website_label, alignment=Qt.AlignRight)
 
         self.wirlab_logo_label = QLabel("WIRLab", self)
         self.wirlab_logo_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.wirlab_logo_label.setStyleSheet("font-size: 28px; font-weight: 800; color: #0f5e2b;")
+        self.wirlab_logo_label.setStyleSheet("font-size: 20px; font-weight: 800; color: #0f5e2b;")
         logo_col.addWidget(self.wirlab_logo_label, alignment=Qt.AlignRight)
         header_row.addLayout(logo_col, stretch=2)
         root.addLayout(header_row)
 
         self.status_label = QLabel("Ready for demo capture.", self)
-        self.status_label.setStyleSheet("font-size: 15px; color: #1f2937;")
+        self.status_label.setStyleSheet("font-size: 12px; color: #1f2937;")
         root.addWidget(self.status_label)
 
         self.figure = Figure(figsize=(10, 6), dpi=100)
@@ -150,7 +151,7 @@ class DemoWindow(QWidget):
         self.demo_tabs = QTabWidget(self)
         self.demo_tabs.setStyleSheet(
             "QTabWidget::pane { border: 1px solid #cfd8e3; border-radius: 8px; background: #ffffff; }"
-            "QTabBar::tab { padding: 8px 12px; }"
+            "QTabBar::tab { padding: 5px 9px; font-size: 12px; }"
         )
         csi_tab = QWidget(self.demo_tabs)
         csi_layout = QVBoxLayout(csi_tab)
@@ -180,12 +181,15 @@ class DemoWindow(QWidget):
         content_row.addWidget(self.demo_tabs, stretch=4)
 
         info_pane = QFrame(self)
+        info_pane.setMaximumWidth(260)
         info_pane.setFrameShape(QFrame.StyledPanel)
         info_pane.setStyleSheet(
             "QFrame {border: 1px solid #cfd8e3; border-radius: 8px; background: #f8fafc;}"
-            "QLabel {color: #1f2937;}"
+            "QLabel {color: #1f2937; font-size: 12px;}"
         )
         info_layout = QFormLayout(info_pane)
+        info_layout.setContentsMargins(8, 8, 8, 8)
+        info_layout.setVerticalSpacing(4)
         info_layout.setLabelAlignment(Qt.AlignLeft)
         self.packet_count_label = QLabel("-", info_pane)
         self.sampling_rate_label = QLabel("- pkt/s", info_pane)
@@ -202,8 +206,8 @@ class DemoWindow(QWidget):
         self.btn_capture = QPushButton("CSI Capture", self)
         self.btn_capture.clicked.connect(self._on_capture_clicked)
         self.btn_capture.setStyleSheet(
-            "QPushButton {background-color: #16a34a; color: white; font-size: 16px; font-weight: 700; "
-            "padding: 10px 18px; border-radius: 8px;}"
+            "QPushButton {background-color: #16a34a; color: white; font-size: 14px; font-weight: 700; "
+            "padding: 6px 12px; border-radius: 8px;}"
             "QPushButton:hover {background-color: #15803d;}"
             "QPushButton:disabled {background-color: #86efac; color: #f8fafc;}"
         )
@@ -212,8 +216,8 @@ class DemoWindow(QWidget):
         self.btn_close = QPushButton("Close Window", self)
         self.btn_close.clicked.connect(self.close)
         self.btn_close.setStyleSheet(
-            "QPushButton {background-color: #2563eb; color: white; font-size: 15px; font-weight: 600; "
-            "padding: 10px 18px; border-radius: 8px;}"
+            "QPushButton {background-color: #2563eb; color: white; font-size: 13px; font-weight: 600; "
+            "padding: 6px 12px; border-radius: 8px;}"
             "QPushButton:hover {background-color: #1d4ed8;}"
         )
         button_row.addWidget(self.btn_close)
