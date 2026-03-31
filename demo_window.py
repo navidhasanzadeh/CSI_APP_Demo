@@ -111,7 +111,7 @@ class DemoWindow(QWidget):
         logo_col.setSpacing(2)
         logo_col.setAlignment(Qt.AlignRight | Qt.AlignTop)
         self.qr_placeholder = QLabel(self)
-        self.qr_placeholder.setFixedSize(120, 120)
+        self.qr_placeholder.setFixedSize(160, 160)
         self.qr_placeholder.setAlignment(Qt.AlignCenter)
         self.qr_placeholder.setFrameStyle(QFrame.Box | QFrame.Plain)
         self.qr_placeholder.setStyleSheet(
@@ -195,14 +195,20 @@ class DemoWindow(QWidget):
         root.addLayout(content_row, stretch=1)
         self._start_clock_updates()
 
-        bottom_row = QHBoxLayout()
+        bottom_row = QVBoxLayout()
+        bottom_row.setContentsMargins(0, 0, 0, 0)
+        bottom_row.setSpacing(6)
         self.qr_website_label = QLabel(self._qr_website_text(), self)
         self.qr_website_label.setAlignment(Qt.AlignCenter)
         self.qr_website_label.setStyleSheet("font-size: 12px; font-weight: 700; color: #2563eb;")
         self.qr_website_label.setWordWrap(True)
         self.qr_website_label.setMaximumWidth(500)
+        bottom_row.addWidget(self.qr_website_label, alignment=Qt.AlignHCenter | Qt.AlignBottom)
 
         button_row = QHBoxLayout()
+        button_row.setContentsMargins(0, 0, 0, 0)
+        button_row.setSpacing(8)
+        button_row.addStretch(1)
         self.btn_capture = QPushButton("CSI Capture", self)
         self.btn_capture.clicked.connect(self._on_capture_clicked)
         self.btn_capture.setStyleSheet(
@@ -222,10 +228,7 @@ class DemoWindow(QWidget):
         )
         button_row.addWidget(self.btn_close)
         button_row.addStretch(1)
-
-        bottom_row.addLayout(button_row, stretch=3)
-        bottom_row.addWidget(self.qr_website_label, stretch=2, alignment=Qt.AlignHCenter | Qt.AlignBottom)
-        bottom_row.addStretch(1)
+        bottom_row.addLayout(button_row)
 
         root.addLayout(bottom_row)
 
@@ -268,8 +271,13 @@ class DemoWindow(QWidget):
         if path and Path(path).exists():
             pixmap = QPixmap(path)
             if not pixmap.isNull():
+                target_size = self.qr_placeholder.size()
                 self.qr_placeholder.setPixmap(
-                    pixmap.scaled(160, 160, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                    pixmap.scaled(
+                        target_size,
+                        Qt.KeepAspectRatio,
+                        Qt.SmoothTransformation,
+                    )
                 )
                 self.qr_placeholder.setText("")
                 return
