@@ -9,6 +9,7 @@ from pathlib import Path
 from itertools import combinations
 
 import numpy as np
+import scipy.linalg as LA
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PyQt5.QtCore import pyqtSignal
@@ -161,8 +162,16 @@ class DemoWindow(QWidget):
 
         doppler_proj_tab = QWidget(self.demo_tabs)
         doppler_proj_layout = QVBoxLayout(doppler_proj_tab)
-        doppler_proj_layout.addWidget(QLabel("Doppler Projections (coming soon).", doppler_proj_tab))
-        doppler_proj_layout.addStretch(1)
+        self.doppler_figure = Figure(figsize=(10, 6), dpi=100)
+        self.doppler_canvas = FigureCanvas(self.doppler_figure)
+        self.doppler_canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.doppler_scroll = QScrollArea(doppler_proj_tab)
+        self.doppler_scroll.setWidgetResizable(True)
+        self.doppler_scroll.setWidget(self.doppler_canvas)
+        self.doppler_scroll.setStyleSheet(
+            "QScrollArea {border: 1px solid #cfd8e3; border-radius: 10px; background: #ffffff;}"
+        )
+        doppler_proj_layout.addWidget(self.doppler_scroll, stretch=1)
         self.demo_tabs.addTab(doppler_proj_tab, "Doppler Projections")
 
         dorf_tab = QWidget(self.demo_tabs)
@@ -589,9 +598,149 @@ class DemoWindow(QWidget):
 
         self.figure.subplots_adjust(left=0.08, right=0.92, top=0.96, bottom=0.07)
         self.canvas.draw_idle()
+        self._plot_doppler_music(csi_data, time_vals, packet_count, tx_pairs)
 
     def _on_plot_requested(self, pcap_path: str, bandwidth_mhz: int):
         self._plot_ratio(Path(pcap_path), int(bandwidth_mhz))
+
+    @staticmethod
+    def _music_peak_from_covariance(
+        covariance: np.ndarray,
+        *,
+        source_count: int = 1,
+        bins: int = 256,
+    ) -> float:
+        """Estimate dominant normalized Doppler frequency using a 1D MUSIC spectrum."""
+        if covariance.ndim != 2 or covariance.shape[0] != covariance.shape[1]:
+            return float("nan")
+        n = covariance.shape[0]
+        if n < 2:
+            return float("nan")
+        covariance = np.nan_to_num(covariance)
+        eigvals, eigvecs = LA.eigh(covariance)
+        order = np.argsort(np.abs(eigvals))[::-1]
+        eigvecs = eigvecs[:, order]
+        noise_dim = max(1, n - int(max(1, source_count)))
+        noise_subspace = eigvecs[:, -noise_dim:]
+        freqs = np.linspace(-0.5, 0.5, bins)
+        sensors = np.arange(n)
+        pseudo_spectrum = np.empty_like(freqs, dtype=float)
+        for i, freq in enumerate(freqs):
+            steering = np.exp(1j * 2 * np.pi * freq * sensors).reshape(-1, 1)
+            proj = noise_subspace.conj().T @ steering
+            denom = float(np.real((proj.conj().T @ proj)[0, 0]))
+            pseudo_spectrum[i] = 1.0 / max(denom, 1e-12)
+        return float(freqs[int(np.argmax(pseudo_spectrum))])
+
+    def _root_music_csi_like(self, sample_data: np.ndarray) -> np.ndarray:
+        """Windowed MUSIC estimate mirroring DoRF Root_MUSIC_CSI output shape."""
+        if sample_data.ndim != 2 or sample_data.shape[1] < 32:
+            return np.array([], dtype=float)
+        n_sc, n_t = sample_data.shape
+        sig_padded = np.zeros((n_sc, n_t + 100), dtype=np.complex128)
+        sig_padded[:, 50:-50] = sample_data
+        sig_padded[:, :50] = sample_data[:, 50:0:-1]
+        sig_padded[:, -50:] = sample_data[:, -1:-51:-1]
+
+        doppler_vector = []
+        for w in range(50, n_t + 50):
+            sig_window = sig_padded[:, w - 16 : w + 16]
+            h = sig_window.T
+            covariance = h @ h.conj().T
+            peak = self._music_peak_from_covariance(covariance, source_count=1, bins=256)
+            doppler_vector.append(peak)
+        return np.asarray(doppler_vector, dtype=float)
+
+    def _extract_csi_ratio_for_stream(
+        self, csi_data: np.ndarray, rx_idx: int, tx_pair: tuple[int, int]
+    ) -> np.ndarray:
+        """Apply DoRF CSI-ratio preprocessing for a single RX/TX stream pair."""
+        tx_num, tx_den = tx_pair
+        ratio_chunks: list[np.ndarray] = []
+        max_subants = min(4, csi_data.shape[1] // 64)
+        for subant in range(max_subants):
+            csi_1 = csi_data[:, :, rx_idx, tx_num]
+            csi_1_1 = csi_1[:, 64 * subant : 64 * (1 + subant)]
+            csi_1_1 = csi_1_1[:, 6:-6]
+            valid_idx = [i for i in range(csi_1_1.shape[1]) if i not in (19, 46)]
+            csi_1_1 = csi_1_1[:, np.array(valid_idx, dtype=int)]
+
+            csi_2 = csi_data[:, :, rx_idx, tx_den]
+            csi_2_1 = csi_2[:, 64 * subant : 64 * (1 + subant)]
+            csi_2_1 = csi_2_1[:, 6:-6]
+            valid_idx = [i for i in range(csi_2_1.shape[1]) if i not in (19, 46)]
+            csi_2_1 = csi_2_1[:, np.array(valid_idx, dtype=int)]
+
+            csi_21 = csi_2_1 / (1e-6 + csi_1_1)
+            ratio_chunks.append(csi_21)
+
+        if not ratio_chunks:
+            return np.array([], dtype=np.complex128)
+        csi_ratio = np.concatenate(ratio_chunks, axis=1)
+        if csi_ratio.shape[1] < 2:
+            return csi_ratio
+
+        good_subcarriers = []
+        for iii in range(csi_ratio.shape[1] - 1):
+            corr = np.corrcoef(np.angle(csi_ratio[:, iii]), np.angle(csi_ratio[:, iii + 1]))[0][1]
+            good_subcarriers.append(corr)
+        good_subcarriers = np.abs(np.nan_to_num(np.asarray(good_subcarriers)))
+        good_subcarriers = np.where(good_subcarriers > 0.6)[0]
+        if good_subcarriers.size == 0:
+            return np.array([], dtype=np.complex128)
+        return csi_ratio[:, good_subcarriers]
+
+    def _plot_doppler_music(
+        self,
+        csi_data: np.ndarray,
+        time_vals: np.ndarray,
+        packet_count: int,
+        tx_pairs: list[tuple[int, int]],
+    ) -> None:
+        rx_count = csi_data.shape[2] if csi_data.ndim >= 3 else 1
+        total_pairs = rx_count * len(tx_pairs)
+        self.doppler_figure.clear()
+        if total_pairs == 0:
+            self.doppler_canvas.draw_idle()
+            return
+        if time_vals.size == packet_count:
+            x = time_vals
+            x_label = "Time (s)"
+        else:
+            x = np.arange(packet_count)
+            x_label = "Packet index"
+
+        grid = self.doppler_figure.add_gridspec(total_pairs, 1, hspace=0.9)
+        fig_height = max(8, total_pairs * 1.9)
+        self.doppler_figure.set_size_inches(11, fig_height)
+        self.doppler_canvas.setMinimumHeight(int(fig_height * self.doppler_figure.get_dpi()))
+
+        for row_idx, (rx_idx, tx_pair) in enumerate(
+            (rx_tx for rx_tx in ((r, pair) for r in range(rx_count) for pair in tx_pairs))
+        ):
+            csi_ratio = self._extract_csi_ratio_for_stream(csi_data, rx_idx, tx_pair)
+            music_output = self._root_music_csi_like(csi_ratio.T) if csi_ratio.size else np.array([])
+            ax = self.doppler_figure.add_subplot(grid[row_idx, 0])
+            if music_output.size:
+                x_trim = x[: music_output.size]
+                ax.plot(x_trim, music_output, color="tab:purple", linewidth=0.9)
+            else:
+                ax.text(
+                    0.5,
+                    0.5,
+                    "Insufficient valid subcarriers for MUSIC.",
+                    transform=ax.transAxes,
+                    ha="center",
+                    va="center",
+                    fontsize=9,
+                )
+            ax.set_ylabel("Norm. Doppler")
+            ax.set_title(f"RX {rx_idx + 1}: TX {tx_pair[0] + 1}/TX {tx_pair[1] + 1} MUSIC")
+            ax.grid(True)
+            if row_idx == total_pairs - 1:
+                ax.set_xlabel(x_label)
+        self.doppler_figure.subplots_adjust(left=0.08, right=0.95, top=0.96, bottom=0.08)
+        self.doppler_canvas.draw_idle()
 
     def _on_capture_finished(self, success: bool, message: str):
         self._stop_capture_progress()
