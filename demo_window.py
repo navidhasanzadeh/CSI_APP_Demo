@@ -78,6 +78,8 @@ class DemoWindow(QWidget):
         root.setSpacing(12)
 
         header_row = QHBoxLayout()
+        header_row.setContentsMargins(0, 0, 0, 0)
+        header_row.setSpacing(16)
         header_left_col = QVBoxLayout()
         header_left_col.setSpacing(2)
         self.icassp_logo_label = QLabel(self._icassp_title_text(), self)
@@ -102,15 +104,33 @@ class DemoWindow(QWidget):
         self.title_label.setAlignment(Qt.AlignCenter)
         self.title_label.setWordWrap(True)
         self.title_label.setStyleSheet("font-size: 30px; font-weight: 700; color: #0b1f3a;")
-        header_row.addWidget(self.title_label, stretch=3)
+        header_row.addWidget(self.title_label, stretch=4)
 
         logo_col = QVBoxLayout()
-        logo_col.setSpacing(2)
+        logo_col.setSpacing(6)
+        logo_col.setAlignment(Qt.AlignRight | Qt.AlignTop)
+        self.qr_placeholder = QLabel(self)
+        self.qr_placeholder.setFixedSize(180, 180)
+        self.qr_placeholder.setAlignment(Qt.AlignCenter)
+        self.qr_placeholder.setFrameStyle(QFrame.Box | QFrame.Plain)
+        self.qr_placeholder.setStyleSheet(
+            "QLabel {border: 2px dashed #94a3b8; border-radius: 10px; background: #f8fafc; "
+            "color: #475569; font-size: 14px; font-weight: 600;}"
+        )
+        self._update_qr_placeholder()
+        logo_col.addWidget(self.qr_placeholder, alignment=Qt.AlignRight)
+
+        self.qr_website_label = QLabel(self._qr_website_text(), self)
+        self.qr_website_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.qr_website_label.setStyleSheet("font-size: 13px; font-weight: 600; color: #2563eb;")
+        self.qr_website_label.setWordWrap(True)
+        logo_col.addWidget(self.qr_website_label, alignment=Qt.AlignRight)
+
         self.wirlab_logo_label = QLabel("WIRLab", self)
         self.wirlab_logo_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.wirlab_logo_label.setStyleSheet("font-size: 28px; font-weight: 800; color: #0f5e2b;")
-        logo_col.addWidget(self.wirlab_logo_label)
-        header_row.addLayout(logo_col, stretch=1)
+        logo_col.addWidget(self.wirlab_logo_label, alignment=Qt.AlignRight)
+        header_row.addLayout(logo_col, stretch=2)
         root.addLayout(header_row)
 
         self.status_label = QLabel("Ready for demo capture.", self)
@@ -201,29 +221,6 @@ class DemoWindow(QWidget):
 
         bottom_row.addLayout(button_row, stretch=3)
 
-        self.qr_placeholder = QLabel(self)
-        self.qr_placeholder.setFixedSize(200, 200)
-        self.qr_placeholder.setAlignment(Qt.AlignCenter)
-        self.qr_placeholder.setFrameStyle(QFrame.Box | QFrame.Plain)
-        self.qr_placeholder.setStyleSheet(
-            "QLabel {border: 2px dashed #94a3b8; border-radius: 10px; background: #f8fafc; "
-            "color: #475569; font-size: 14px; font-weight: 600;}"
-        )
-        self._update_qr_placeholder()
-
-        qr_container = QVBoxLayout()
-        qr_container.addWidget(self.qr_placeholder, alignment=Qt.AlignRight)
-        self.qr_caption_label = QLabel("QR Code", self)
-        self.qr_caption_label.setAlignment(Qt.AlignCenter)
-        self.qr_caption_label.setStyleSheet("font-size: 14px; font-weight: 700; color: #1f2937;")
-        qr_container.addWidget(self.qr_caption_label)
-        self.qr_website_label = QLabel(self._qr_website_text(), self)
-        self.qr_website_label.setAlignment(Qt.AlignCenter)
-        self.qr_website_label.setStyleSheet("font-size: 13px; font-weight: 600; color: #2563eb;")
-        self.qr_website_label.setWordWrap(True)
-        qr_container.addWidget(self.qr_website_label)
-        bottom_row.addLayout(qr_container, stretch=1)
-
         root.addLayout(bottom_row)
 
     def _demo_title_text(self) -> str:
@@ -266,7 +263,7 @@ class DemoWindow(QWidget):
             pixmap = QPixmap(path)
             if not pixmap.isNull():
                 self.qr_placeholder.setPixmap(
-                    pixmap.scaled(180, 180, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                    pixmap.scaled(160, 160, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 )
                 self.qr_placeholder.setText("")
                 return
@@ -540,8 +537,8 @@ class DemoWindow(QWidget):
             total_pairs,
             2,
             width_ratios=[1, 1],
-            wspace=0.35,
-            hspace=0.6,
+            wspace=0.65,
+            hspace=1.05,
         )
         figure_height = max(8, total_pairs * 2.1)
         self.figure.set_size_inches(12, figure_height)
@@ -562,11 +559,13 @@ class DemoWindow(QWidget):
             ax_phase = self.figure.add_subplot(grid[row_idx, 1], sharex=ax_mag)
 
             ax_mag.plot(x, ratio_mag, color="tab:blue", linewidth=0.9)
+            ax_mag.margins(x=0.08, y=0.25)
             ax_mag.set_ylabel("|Ratio|")
             ax_mag.set_title(f"RX {rx_idx + 1}: TX {tx_num + 1}/TX {tx_den + 1} Magnitude")
             ax_mag.grid(True)
 
             ax_phase.plot(x, ratio_phase, color="tab:green", linewidth=0.9)
+            ax_phase.margins(x=0.08, y=0.25)
             ax_phase.set_ylabel("Phase (rad)")
             ax_phase.set_title(f"RX {rx_idx + 1}: TX {tx_num + 1}/TX {tx_den + 1} Phase")
             ax_phase.grid(True)
@@ -575,7 +574,7 @@ class DemoWindow(QWidget):
                 ax_mag.set_xlabel(x_label)
                 ax_phase.set_xlabel(x_label)
 
-        self.figure.tight_layout()
+        self.figure.subplots_adjust(left=0.08, right=0.92, top=0.96, bottom=0.07)
         self.canvas.draw_idle()
 
     def _on_plot_requested(self, pcap_path: str, bandwidth_mhz: int):
