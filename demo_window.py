@@ -184,7 +184,7 @@ class DemoWindow(QWidget):
         dorf_tab = QWidget(self.demo_tabs)
         dorf_layout = QVBoxLayout(dorf_tab)
         self.chk_dorf_visualize = QCheckBox("Visualize DoRF DTW plots", dorf_tab)
-        self.chk_dorf_visualize.setChecked(bool(self.demo_profile.get("dorf_visualize", True)))
+        self.chk_dorf_visualize.setChecked(bool(self.demo_profile.get("dorf_visualize", False)))
         dorf_layout.addWidget(self.chk_dorf_visualize)
 
         self.dorf_figure = Figure(figsize=(10, 6), dpi=100)
