@@ -40,6 +40,7 @@ DORF_PATH = Path(__file__).resolve().parent / "DoRF"
 if str(DORF_PATH) not in sys.path:
     sys.path.append(str(DORF_PATH))
 import doatools.estimation as estimation
+from nerfs2 import estimate_velocity_from_radial_old_dtw
 
 try:  # pragma: no cover - optional dependency at runtime
     from hampel import hampel
@@ -182,8 +183,20 @@ class DemoWindow(QWidget):
 
         dorf_tab = QWidget(self.demo_tabs)
         dorf_layout = QVBoxLayout(dorf_tab)
-        dorf_layout.addWidget(QLabel("Doppler Radiance Fields (DoRF) (coming soon).", dorf_tab))
-        dorf_layout.addStretch(1)
+        self.chk_dorf_visualize = QCheckBox("Visualize DoRF DTW plots", dorf_tab)
+        self.chk_dorf_visualize.setChecked(bool(self.demo_profile.get("dorf_visualize", True)))
+        dorf_layout.addWidget(self.chk_dorf_visualize)
+
+        self.dorf_figure = Figure(figsize=(10, 6), dpi=100)
+        self.dorf_canvas = FigureCanvas(self.dorf_figure)
+        self.dorf_canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.dorf_scroll = QScrollArea(dorf_tab)
+        self.dorf_scroll.setWidgetResizable(True)
+        self.dorf_scroll.setWidget(self.dorf_canvas)
+        self.dorf_scroll.setStyleSheet(
+            "QScrollArea {border: 1px solid #cfd8e3; border-radius: 10px; background: #ffffff;}"
+        )
+        dorf_layout.addWidget(self.dorf_scroll, stretch=1)
         self.demo_tabs.addTab(dorf_tab, "Doppler Radiance Fields (DoRF)")
 
         content_row = QHBoxLayout()
@@ -699,12 +712,14 @@ class DemoWindow(QWidget):
         fig_height = max(8, total_pairs * 1.9)
         self.doppler_figure.set_size_inches(11, fig_height)
         self.doppler_canvas.setMinimumHeight(int(fig_height * self.doppler_figure.get_dpi()))
+        dopplers: list[np.ndarray] = []
 
         for row_idx, (rx_idx, tx_pair) in enumerate(
             (rx_tx for rx_tx in ((r, pair) for r in range(rx_count) for pair in tx_pairs))
         ):
             csi_ratio = self._extract_csi_ratio_for_stream(csi_data, rx_idx, tx_pair)
             music_output = self._root_music_csi_like(csi_ratio.T) if csi_ratio.size else np.array([])
+            dopplers.append(np.asarray(music_output, dtype=float))
             ax = self.doppler_figure.add_subplot(grid[row_idx, 0])
             if music_output.size:
                 x_trim = x[: music_output.size]
@@ -726,6 +741,88 @@ class DemoWindow(QWidget):
                 ax.set_xlabel(x_label)
         self.doppler_figure.subplots_adjust(left=0.08, right=0.95, top=0.96, bottom=0.08)
         self.doppler_canvas.draw_idle()
+        self._plot_dorf_from_dopplers(dopplers)
+
+    def _plot_dorf_from_dopplers(self, dopplers: list[np.ndarray]) -> None:
+        self.dorf_figure.clear()
+        if len(dopplers) < 24:
+            ax = self.dorf_figure.add_subplot(111)
+            ax.text(
+                0.5,
+                0.5,
+                "Need 24 Doppler projections for DoRF velocity estimation.",
+                transform=ax.transAxes,
+                ha="center",
+                va="center",
+            )
+            ax.set_axis_off()
+            self.dorf_canvas.draw_idle()
+            return
+
+        selected = [np.asarray(v, dtype=float).reshape(-1) for v in dopplers[:24]]
+        min_len = min((v.size for v in selected), default=0)
+        if min_len == 0:
+            ax = self.dorf_figure.add_subplot(111)
+            ax.text(
+                0.5,
+                0.5,
+                "DoRF estimation skipped: at least one Doppler projection is empty.",
+                transform=ax.transAxes,
+                ha="center",
+                va="center",
+            )
+            ax.set_axis_off()
+            self.dorf_canvas.draw_idle()
+            return
+
+        doppler_matrix = np.vstack([v[:min_len] for v in selected]).T
+        for i in range(doppler_matrix.shape[1]):
+            doppler_matrix[:, i] = doppler_matrix[:, i] - np.mean(doppler_matrix[:, i])
+
+        t = np.arange(doppler_matrix.shape[0])
+        best_v, _, best_mask, best_loss, loss_hist, proj_images, _ = estimate_velocity_from_radial_old_dtw(
+            doppler_matrix[:, :],
+            subset_fraction=1.0,
+            outer_iterations=10,
+            mean_zero_velocity=False,
+            true_v=None,
+            time_axis=t,
+            camera_numbers=list(range(doppler_matrix.shape[1])),
+            dtw_window=8,
+            use_support_dtw=False,
+            visualise=self.chk_dorf_visualize.isChecked(),
+            grid_res=6,
+            max_clusters=2,
+        )
+
+        grid = self.dorf_figure.add_gridspec(3, 1, hspace=0.55)
+        ax_loss = self.dorf_figure.add_subplot(grid[0, 0])
+        ax_loss.plot(loss_hist, marker="o", color="tab:blue", linewidth=1.0)
+        ax_loss.set_title(f"DoRF DTW loss (best={best_loss:.4f})")
+        ax_loss.set_ylabel("Loss")
+        ax_loss.set_xlabel("Iteration")
+        ax_loss.grid(True)
+
+        ax_vel = self.dorf_figure.add_subplot(grid[1, 0])
+        for dim, label in enumerate(("v_x", "v_y", "v_z")):
+            ax_vel.plot(best_v[:, dim], label=label, linewidth=0.95)
+        ax_vel.set_title("Estimated velocity components")
+        ax_vel.set_xlabel("Time index")
+        ax_vel.set_ylabel("Velocity")
+        ax_vel.legend(loc="upper right")
+        ax_vel.grid(True)
+
+        ax_proj = self.dorf_figure.add_subplot(grid[2, 0])
+        projection_map = proj_images.mean(axis=0)
+        im = ax_proj.imshow(projection_map, cmap="seismic", aspect="auto", origin="upper")
+        kept = int(np.sum(best_mask)) if best_mask is not None else 0
+        ax_proj.set_title(f"Average DoRF projection map ({kept}/{doppler_matrix.shape[1]} kept)")
+        ax_proj.set_xlabel("Longitude bins")
+        ax_proj.set_ylabel("Latitude bins")
+        self.dorf_figure.colorbar(im, ax=ax_proj, orientation="vertical", fraction=0.045, pad=0.02)
+
+        self.dorf_figure.subplots_adjust(left=0.08, right=0.95, top=0.95, bottom=0.07)
+        self.dorf_canvas.draw_idle()
 
     def _on_capture_finished(self, success: bool, message: str):
         self._stop_capture_progress()
