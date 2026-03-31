@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import threading
 import time
+import sys
 from datetime import datetime
 from pathlib import Path
 from itertools import combinations
@@ -34,6 +35,11 @@ from PyQt5.QtCore import Qt, QTimer
 from pcap_reader import ProcessPcap
 from pcap_reader_ui import _read_ubilocate_csi
 from wifi_csi_manager import WiFiCSIManager
+
+DORF_PATH = Path(__file__).resolve().parent / "DoRF"
+if str(DORF_PATH) not in sys.path:
+    sys.path.append(str(DORF_PATH))
+import doatools.estimation as estimation
 
 try:  # pragma: no cover - optional dependency at runtime
     from hampel import hampel
@@ -603,37 +609,11 @@ class DemoWindow(QWidget):
     def _on_plot_requested(self, pcap_path: str, bandwidth_mhz: int):
         self._plot_ratio(Path(pcap_path), int(bandwidth_mhz))
 
-    @staticmethod
-    def _music_peak_from_covariance(
-        covariance: np.ndarray,
-        *,
-        source_count: int = 1,
-        bins: int = 256,
-    ) -> float:
-        """Estimate dominant normalized Doppler frequency using a 1D MUSIC spectrum."""
-        if covariance.ndim != 2 or covariance.shape[0] != covariance.shape[1]:
-            return float("nan")
-        n = covariance.shape[0]
-        if n < 2:
-            return float("nan")
-        covariance = np.nan_to_num(covariance)
-        eigvals, eigvecs = LA.eigh(covariance)
-        order = np.argsort(np.abs(eigvals))[::-1]
-        eigvecs = eigvecs[:, order]
-        noise_dim = max(1, n - int(max(1, source_count)))
-        noise_subspace = eigvecs[:, -noise_dim:]
-        freqs = np.linspace(-0.5, 0.5, bins)
-        sensors = np.arange(n)
-        pseudo_spectrum = np.empty_like(freqs, dtype=float)
-        for i, freq in enumerate(freqs):
-            steering = np.exp(1j * 2 * np.pi * freq * sensors).reshape(-1, 1)
-            proj = noise_subspace.conj().T @ steering
-            denom = float(np.real((proj.conj().T @ proj)[0, 0]))
-            pseudo_spectrum[i] = 1.0 / max(denom, 1e-12)
-        return float(freqs[int(np.argmax(pseudo_spectrum))])
-
-    def _root_music_csi_like(self, sample_data: np.ndarray) -> np.ndarray:
-        """Windowed MUSIC estimate mirroring DoRF Root_MUSIC_CSI output shape."""
+    def _root_music_csi_like(
+        self, sample_data: np.ndarray, do_cov_processing: bool = False, L: int = 1
+    ) -> np.ndarray:
+        """Use original DoRF Root_MUSIC_CSI routine for Doppler projection."""
+        _ = do_cov_processing
         if sample_data.ndim != 2 or sample_data.shape[1] < 32:
             return np.array([], dtype=float)
         n_sc, n_t = sample_data.shape
@@ -647,9 +627,14 @@ class DemoWindow(QWidget):
             sig_window = sig_padded[:, w - 16 : w + 16]
             h = sig_window.T
             covariance = h @ h.conj().T
-            peak = self._music_peak_from_covariance(covariance, source_count=1, bins=256)
-            doppler_vector.append(peak)
-        return np.asarray(doppler_vector, dtype=float)
+            covariance = np.nan_to_num(covariance)
+            eigvals, eigvecs = LA.eig(covariance)
+            eigvals = np.abs(eigvals)
+            _ = (eigvals, eigvecs)
+            estimator = estimation.RootMUSIC1D(1.0)
+            _, estimates = estimator.estimate(covariance, L)
+            doppler_vector.append(estimates.locations)
+        return np.asarray(doppler_vector, dtype=float).reshape(-1)
 
     def _extract_csi_ratio_for_stream(
         self, csi_data: np.ndarray, rx_idx: int, tx_pair: tuple[int, int]
