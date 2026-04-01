@@ -397,6 +397,12 @@ DEFAULT_DEMO_PROFILE = {
     "icassp_title_text": "IEEE ICASSP 2026",
     "authors_text": "Authors: Navid Hasanzadeh, Shahrokh Valaee",
     "university_text": "University of Toronto",
+    "capture_guidance_title": "CSI Capture Guidance",
+    "capture_guidance_message": "Please perform one of these gestures.",
+    "capture_guidance_video_left_label": "Left/Right",
+    "capture_guidance_video_left_path": "videos/right_left.mp4",
+    "capture_guidance_video_right_label": "Up/Down",
+    "capture_guidance_video_right_path": "videos/up_down.mp4",
     "subplot_settings": {
         "csi_ratio_magnitude": {"visible": True, "title": "CSI Ratio Magnitude", "xlabel": "Time (s)", "ylabel": "|Ratio|", "info": "Shows CSI magnitude ratio between two TX antennas."},
         "csi_ratio_phase": {"visible": True, "title": "CSI Ratio Phase", "xlabel": "Time (s)", "ylabel": "Phase (rad)", "info": "Shows CSI phase ratio between two TX antennas."},
@@ -929,6 +935,30 @@ def _load_demo_profiles_from_csv():
                     row.get("university_text")
                     or profile["university_text"]
                 ).strip() or DEFAULT_DEMO_PROFILE["university_text"]
+                profile["capture_guidance_title"] = (
+                    row.get("capture_guidance_title")
+                    or profile["capture_guidance_title"]
+                ).strip() or DEFAULT_DEMO_PROFILE["capture_guidance_title"]
+                profile["capture_guidance_message"] = (
+                    row.get("capture_guidance_message")
+                    or profile["capture_guidance_message"]
+                ).strip() or DEFAULT_DEMO_PROFILE["capture_guidance_message"]
+                profile["capture_guidance_video_left_label"] = (
+                    row.get("capture_guidance_video_left_label")
+                    or profile["capture_guidance_video_left_label"]
+                ).strip() or DEFAULT_DEMO_PROFILE["capture_guidance_video_left_label"]
+                profile["capture_guidance_video_left_path"] = (
+                    row.get("capture_guidance_video_left_path")
+                    or profile["capture_guidance_video_left_path"]
+                ).strip()
+                profile["capture_guidance_video_right_label"] = (
+                    row.get("capture_guidance_video_right_label")
+                    or profile["capture_guidance_video_right_label"]
+                ).strip() or DEFAULT_DEMO_PROFILE["capture_guidance_video_right_label"]
+                profile["capture_guidance_video_right_path"] = (
+                    row.get("capture_guidance_video_right_path")
+                    or profile["capture_guidance_video_right_path"]
+                ).strip()
                 raw_subplot_json = (row.get("subplot_settings_json") or "").strip()
                 if raw_subplot_json:
                     try:
@@ -1835,6 +1865,12 @@ def save_demo_profiles(profiles: dict):
                 "icassp_title_text",
                 "authors_text",
                 "university_text",
+                "capture_guidance_title",
+                "capture_guidance_message",
+                "capture_guidance_video_left_label",
+                "capture_guidance_video_left_path",
+                "capture_guidance_video_right_label",
+                "capture_guidance_video_right_path",
                 "subplot_settings_json",
                 "dorf_plot_order",
             ]
@@ -1909,6 +1945,54 @@ def save_demo_profiles(profiles: dict):
                             ).strip()
                             or DEFAULT_DEMO_PROFILE["university_text"]
                         ),
+                        "capture_guidance_title": (
+                            str(
+                                profile.get(
+                                    "capture_guidance_title",
+                                    DEFAULT_DEMO_PROFILE["capture_guidance_title"],
+                                )
+                            ).strip()
+                            or DEFAULT_DEMO_PROFILE["capture_guidance_title"]
+                        ),
+                        "capture_guidance_message": (
+                            str(
+                                profile.get(
+                                    "capture_guidance_message",
+                                    DEFAULT_DEMO_PROFILE["capture_guidance_message"],
+                                )
+                            ).strip()
+                            or DEFAULT_DEMO_PROFILE["capture_guidance_message"]
+                        ),
+                        "capture_guidance_video_left_label": (
+                            str(
+                                profile.get(
+                                    "capture_guidance_video_left_label",
+                                    DEFAULT_DEMO_PROFILE["capture_guidance_video_left_label"],
+                                )
+                            ).strip()
+                            or DEFAULT_DEMO_PROFILE["capture_guidance_video_left_label"]
+                        ),
+                        "capture_guidance_video_left_path": str(
+                            profile.get(
+                                "capture_guidance_video_left_path",
+                                DEFAULT_DEMO_PROFILE["capture_guidance_video_left_path"],
+                            )
+                        ).strip(),
+                        "capture_guidance_video_right_label": (
+                            str(
+                                profile.get(
+                                    "capture_guidance_video_right_label",
+                                    DEFAULT_DEMO_PROFILE["capture_guidance_video_right_label"],
+                                )
+                            ).strip()
+                            or DEFAULT_DEMO_PROFILE["capture_guidance_video_right_label"]
+                        ),
+                        "capture_guidance_video_right_path": str(
+                            profile.get(
+                                "capture_guidance_video_right_path",
+                                DEFAULT_DEMO_PROFILE["capture_guidance_video_right_path"],
+                            )
+                        ).strip(),
                         "subplot_settings_json": json.dumps(
                             profile.get(
                                 "subplot_settings",
@@ -4221,6 +4305,42 @@ class ConfigDialog(QDialog):
         self.txt_demo_university.setPlaceholderText(DEFAULT_DEMO_PROFILE["university_text"])
         form.addRow("University text:", self.txt_demo_university)
 
+        self.txt_demo_capture_guidance_title = QLineEdit(self.grp_demo)
+        self.txt_demo_capture_guidance_title.setPlaceholderText(
+            DEFAULT_DEMO_PROFILE["capture_guidance_title"]
+        )
+        form.addRow("Guidance window title:", self.txt_demo_capture_guidance_title)
+
+        self.txt_demo_capture_guidance_message = QLineEdit(self.grp_demo)
+        self.txt_demo_capture_guidance_message.setPlaceholderText(
+            DEFAULT_DEMO_PROFILE["capture_guidance_message"]
+        )
+        form.addRow("Guidance message:", self.txt_demo_capture_guidance_message)
+
+        self.txt_demo_capture_guidance_left_label = QLineEdit(self.grp_demo)
+        self.txt_demo_capture_guidance_left_label.setPlaceholderText(
+            DEFAULT_DEMO_PROFILE["capture_guidance_video_left_label"]
+        )
+        form.addRow("Guidance left video label:", self.txt_demo_capture_guidance_left_label)
+
+        self.txt_demo_capture_guidance_left_path = QLineEdit(self.grp_demo)
+        self.txt_demo_capture_guidance_left_path.setPlaceholderText(
+            DEFAULT_DEMO_PROFILE["capture_guidance_video_left_path"]
+        )
+        form.addRow("Guidance left video path:", self.txt_demo_capture_guidance_left_path)
+
+        self.txt_demo_capture_guidance_right_label = QLineEdit(self.grp_demo)
+        self.txt_demo_capture_guidance_right_label.setPlaceholderText(
+            DEFAULT_DEMO_PROFILE["capture_guidance_video_right_label"]
+        )
+        form.addRow("Guidance right video label:", self.txt_demo_capture_guidance_right_label)
+
+        self.txt_demo_capture_guidance_right_path = QLineEdit(self.grp_demo)
+        self.txt_demo_capture_guidance_right_path.setPlaceholderText(
+            DEFAULT_DEMO_PROFILE["capture_guidance_video_right_path"]
+        )
+        form.addRow("Guidance right video path:", self.txt_demo_capture_guidance_right_path)
+
         self.txt_demo_subplot_settings = QTextEdit(self.grp_demo)
         self.txt_demo_subplot_settings.setPlaceholderText(
             "JSON object keyed by subplot category with: visible, title, xlabel, ylabel, info"
@@ -6410,6 +6530,60 @@ class ConfigDialog(QDialog):
                     )
                 )
             )
+        if hasattr(self, "txt_demo_capture_guidance_title"):
+            self.txt_demo_capture_guidance_title.setText(
+                str(
+                    profile.get(
+                        "capture_guidance_title",
+                        DEFAULT_DEMO_PROFILE["capture_guidance_title"],
+                    )
+                )
+            )
+        if hasattr(self, "txt_demo_capture_guidance_message"):
+            self.txt_demo_capture_guidance_message.setText(
+                str(
+                    profile.get(
+                        "capture_guidance_message",
+                        DEFAULT_DEMO_PROFILE["capture_guidance_message"],
+                    )
+                )
+            )
+        if hasattr(self, "txt_demo_capture_guidance_left_label"):
+            self.txt_demo_capture_guidance_left_label.setText(
+                str(
+                    profile.get(
+                        "capture_guidance_video_left_label",
+                        DEFAULT_DEMO_PROFILE["capture_guidance_video_left_label"],
+                    )
+                )
+            )
+        if hasattr(self, "txt_demo_capture_guidance_left_path"):
+            self.txt_demo_capture_guidance_left_path.setText(
+                str(
+                    profile.get(
+                        "capture_guidance_video_left_path",
+                        DEFAULT_DEMO_PROFILE["capture_guidance_video_left_path"],
+                    )
+                )
+            )
+        if hasattr(self, "txt_demo_capture_guidance_right_label"):
+            self.txt_demo_capture_guidance_right_label.setText(
+                str(
+                    profile.get(
+                        "capture_guidance_video_right_label",
+                        DEFAULT_DEMO_PROFILE["capture_guidance_video_right_label"],
+                    )
+                )
+            )
+        if hasattr(self, "txt_demo_capture_guidance_right_path"):
+            self.txt_demo_capture_guidance_right_path.setText(
+                str(
+                    profile.get(
+                        "capture_guidance_video_right_path",
+                        DEFAULT_DEMO_PROFILE["capture_guidance_video_right_path"],
+                    )
+                )
+            )
         if hasattr(self, "txt_demo_subplot_settings"):
             subplot_settings = profile.get(
                 "subplot_settings", deepcopy(DEFAULT_DEMO_PROFILE["subplot_settings"])
@@ -7420,6 +7594,34 @@ class ConfigDialog(QDialog):
             profile["university_text"] = (
                 self.txt_demo_university.text().strip()
                 or DEFAULT_DEMO_PROFILE["university_text"]
+            )
+        if hasattr(self, "txt_demo_capture_guidance_title"):
+            profile["capture_guidance_title"] = (
+                self.txt_demo_capture_guidance_title.text().strip()
+                or DEFAULT_DEMO_PROFILE["capture_guidance_title"]
+            )
+        if hasattr(self, "txt_demo_capture_guidance_message"):
+            profile["capture_guidance_message"] = (
+                self.txt_demo_capture_guidance_message.text().strip()
+                or DEFAULT_DEMO_PROFILE["capture_guidance_message"]
+            )
+        if hasattr(self, "txt_demo_capture_guidance_left_label"):
+            profile["capture_guidance_video_left_label"] = (
+                self.txt_demo_capture_guidance_left_label.text().strip()
+                or DEFAULT_DEMO_PROFILE["capture_guidance_video_left_label"]
+            )
+        if hasattr(self, "txt_demo_capture_guidance_left_path"):
+            profile["capture_guidance_video_left_path"] = (
+                self.txt_demo_capture_guidance_left_path.text().strip()
+            )
+        if hasattr(self, "txt_demo_capture_guidance_right_label"):
+            profile["capture_guidance_video_right_label"] = (
+                self.txt_demo_capture_guidance_right_label.text().strip()
+                or DEFAULT_DEMO_PROFILE["capture_guidance_video_right_label"]
+            )
+        if hasattr(self, "txt_demo_capture_guidance_right_path"):
+            profile["capture_guidance_video_right_path"] = (
+                self.txt_demo_capture_guidance_right_path.text().strip()
             )
         if hasattr(self, "txt_demo_subplot_settings"):
             raw_json = self.txt_demo_subplot_settings.toPlainText().strip()
