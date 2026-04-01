@@ -12,9 +12,13 @@ from math import ceil
 
 import numpy as np
 import scipy.linalg as LA
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import (
+    FigureCanvasQTAgg as FigureCanvas,
+    NavigationToolbar2QT as NavigationToolbar,
+)
 from matplotlib.figure import Figure
 from matplotlib import cm
+from matplotlib.widgets import Button as MatplotlibButton
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
@@ -76,6 +80,8 @@ class DemoWindow(QWidget):
         self._capture_progress_dialog: QProgressDialog | None = None
         self._capture_progress_timer: QTimer | None = None
         self._clock_timer: QTimer | None = None
+        self._figure_maximize_buttons: dict[Figure, list[tuple[object, MatplotlibButton]]] = {}
+        self._plot_detail_windows: list[QWidget] = []
 
         self.capture_finished.connect(self._on_capture_finished)
         self.plot_requested.connect(self._on_plot_requested)
@@ -618,6 +624,7 @@ class DemoWindow(QWidget):
                 ax_phase.set_xlabel(x_label)
 
         self.figure.subplots_adjust(left=0.08, right=0.92, top=0.96, bottom=0.07)
+        self._install_subplot_maximize_buttons(self.figure, self.canvas)
         self.canvas.draw_idle()
         self._plot_doppler_music(csi_data, time_vals, packet_count, tx_pairs)
 
@@ -747,6 +754,7 @@ class DemoWindow(QWidget):
             spare_ax = self.doppler_figure.add_subplot(grid[-1, -1])
             spare_ax.set_axis_off()
         self.doppler_figure.subplots_adjust(left=0.08, right=0.95, top=0.96, bottom=0.08)
+        self._install_subplot_maximize_buttons(self.doppler_figure, self.doppler_canvas)
         self.doppler_canvas.draw_idle()
         self._plot_dorf_from_dopplers(dopplers)
 
@@ -902,7 +910,124 @@ class DemoWindow(QWidget):
             panel_idx += 1
 
         self.dorf_figure.subplots_adjust(left=0.08, right=0.95, top=0.95, bottom=0.07)
+        self._install_subplot_maximize_buttons(self.dorf_figure, self.dorf_canvas)
         self.dorf_canvas.draw_idle()
+
+    def _install_subplot_maximize_buttons(self, figure: Figure, canvas: FigureCanvas) -> None:
+        for button_ax, button in self._figure_maximize_buttons.get(figure, []):
+            try:
+                button.disconnect_events()
+            except Exception:
+                pass
+            try:
+                button_ax.remove()
+            except Exception:
+                pass
+
+        button_refs: list[tuple[object, MatplotlibButton]] = []
+        for ax in figure.axes:
+            if not ax.get_visible() or ax.get_label() == "<colorbar>":
+                continue
+            bbox = ax.get_position()
+            btn_w = min(0.08, max(0.05, bbox.width * 0.16))
+            btn_h = 0.028
+            x0 = max(bbox.x1 - btn_w - 0.004, 0.002)
+            y0 = max(bbox.y1 - btn_h - 0.004, 0.002)
+            if y0 + btn_h > 0.998:
+                y0 = 0.998 - btn_h
+            if x0 + btn_w > 0.998:
+                x0 = 0.998 - btn_w
+
+            button_ax = figure.add_axes([x0, y0, btn_w, btn_h])
+            button = MatplotlibButton(button_ax, "Max")
+            button.label.set_fontsize(7)
+            button.on_clicked(lambda _evt, source_ax=ax: self._open_subplot_window(source_ax))
+            button_refs.append((button_ax, button))
+
+        self._figure_maximize_buttons[figure] = button_refs
+        canvas.draw_idle()
+
+    def _open_subplot_window(self, source_ax) -> None:
+        window = QWidget(self, Qt.Window)
+        window.setWindowTitle(f"Plot Detail - {source_ax.get_title() or 'Subplot'}")
+        window.resize(980, 620)
+        layout = QVBoxLayout(window)
+        detail_figure = Figure(figsize=(9, 5), dpi=100)
+        detail_canvas = FigureCanvas(detail_figure)
+        toolbar = NavigationToolbar(detail_canvas, window)
+        layout.addWidget(toolbar)
+        layout.addWidget(detail_canvas, stretch=1)
+
+        detail_ax = detail_figure.add_subplot(111, projection=source_ax.name)
+        self._copy_axis_contents(source_ax, detail_ax)
+        detail_figure.tight_layout()
+        detail_canvas.draw_idle()
+
+        self._plot_detail_windows.append(window)
+        window.destroyed.connect(lambda *_: self._cleanup_detail_window(window))
+        window.show()
+
+    def _cleanup_detail_window(self, window: QWidget) -> None:
+        if window in self._plot_detail_windows:
+            self._plot_detail_windows.remove(window)
+
+    @staticmethod
+    def _copy_axis_contents(source_ax, target_ax) -> None:
+        for line in source_ax.get_lines():
+            target_ax.plot(
+                line.get_xdata(),
+                line.get_ydata(),
+                color=line.get_color(),
+                linewidth=line.get_linewidth(),
+                linestyle=line.get_linestyle(),
+                marker=line.get_marker(),
+                label=line.get_label(),
+            )
+
+        for image in source_ax.images:
+            arr = image.get_array()
+            target_ax.imshow(
+                arr,
+                cmap=image.get_cmap(),
+                aspect=image.get_aspect(),
+                origin=image.origin,
+                extent=image.get_extent(),
+                vmin=image.get_clim()[0],
+                vmax=image.get_clim()[1],
+            )
+
+        for text in source_ax.texts:
+            transform = target_ax.transAxes if text.get_transform() == source_ax.transAxes else target_ax.transData
+            target_ax.text(
+                text.get_position()[0],
+                text.get_position()[1],
+                text.get_text(),
+                transform=transform,
+                ha=text.get_ha(),
+                va=text.get_va(),
+                fontsize=text.get_fontsize(),
+                color=text.get_color(),
+            )
+
+        target_ax.set_title(source_ax.get_title())
+        target_ax.set_xlabel(source_ax.get_xlabel())
+        target_ax.set_ylabel(source_ax.get_ylabel())
+        grid_on = any(line.get_visible() for line in source_ax.get_xgridlines() + source_ax.get_ygridlines())
+        target_ax.grid(grid_on)
+
+        xlim = source_ax.get_xlim()
+        ylim = source_ax.get_ylim()
+        target_ax.set_xlim(*xlim)
+        target_ax.set_ylim(*ylim)
+        if hasattr(source_ax, "get_zlim") and hasattr(target_ax, "set_zlim"):
+            try:
+                target_ax.set_zlim(*source_ax.get_zlim())
+            except Exception:
+                pass
+
+        legend = source_ax.get_legend()
+        if legend is not None and target_ax.get_lines():
+            target_ax.legend(loc=legend._loc if hasattr(legend, "_loc") else "best")
 
     def _on_capture_finished(self, success: bool, message: str):
         self._stop_capture_progress()
