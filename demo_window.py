@@ -19,7 +19,10 @@ from matplotlib.widgets import Button as MatplotlibButton
 from mpl_toolkits.mplot3d import proj3d
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QPixmap
+from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtWidgets import (
+    QDialog,
     QCheckBox,
     QFormLayout,
     QHBoxLayout,
@@ -34,7 +37,7 @@ from PyQt5.QtWidgets import (
     QWidget,
     QTabWidget,
 )
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, QUrl
 
 from wifi_csi_manager import WiFiCSIManager
 from demo_plot_calculations import DemoPlotCalculator
@@ -120,6 +123,133 @@ DEFAULT_DORF_PLOT_ORDER = [
     "dorf_cluster_fit",
     "dorf_vmf_clusters",
 ]
+
+
+class CSICaptureGuidanceDialog(QDialog):
+    def __init__(
+        self,
+        *,
+        parent=None,
+        title: str = "CSI Capture Guidance",
+        message: str = "Please perform one of these gestures.",
+        left_label: str = "Gesture 1",
+        left_video_path: str = "",
+        right_label: str = "Gesture 2",
+        right_video_path: str = "",
+    ):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.resize(980, 560)
+        self._accepted = False
+        self._players: list[QMediaPlayer] = []
+        self._video_paths = [left_video_path, right_video_path]
+        self._video_widgets: list[QVideoWidget] = []
+
+        root = QVBoxLayout(self)
+        root.setContentsMargins(12, 12, 12, 12)
+        root.setSpacing(10)
+
+        message_label = QLabel(message, self)
+        message_label.setWordWrap(True)
+        message_label.setStyleSheet("font-size: 14px; font-weight: 600; color: #111827;")
+        root.addWidget(message_label)
+
+        videos_row = QHBoxLayout()
+        videos_row.setSpacing(10)
+        root.addLayout(videos_row, stretch=1)
+
+        for idx, (label_text, video_path) in enumerate(
+            [(left_label, left_video_path), (right_label, right_video_path)]
+        ):
+            col = QVBoxLayout()
+            col.setSpacing(6)
+            title_label = QLabel(label_text, self)
+            title_label.setAlignment(Qt.AlignCenter)
+            title_label.setStyleSheet("font-size: 13px; font-weight: 700; color: #1f2937;")
+            col.addWidget(title_label)
+
+            holder = QWidget(self)
+            holder_layout = QVBoxLayout(holder)
+            holder_layout.setContentsMargins(0, 0, 0, 0)
+            holder_layout.setSpacing(0)
+
+            video_widget = QVideoWidget(holder)
+            video_widget.setMinimumSize(400, 280)
+            holder_layout.addWidget(video_widget)
+
+            fallback_label = QLabel("", holder)
+            fallback_label.setAlignment(Qt.AlignCenter)
+            fallback_label.setWordWrap(True)
+            fallback_label.setStyleSheet(
+                "QLabel {border: 1px dashed #94a3b8; border-radius: 8px; background: #f8fafc;"
+                "color: #475569; font-size: 12px; padding: 8px;}"
+            )
+            holder_layout.addWidget(fallback_label)
+            col.addWidget(holder, stretch=1)
+
+            media_player = QMediaPlayer(self)
+            media_player.setVideoOutput(video_widget)
+            media_player.mediaStatusChanged.connect(
+                lambda status, i=idx: self._on_media_status_changed(i, status)
+            )
+            self._players.append(media_player)
+            self._video_widgets.append(video_widget)
+
+            resolved = self._resolve_video_path(video_path)
+            if resolved:
+                video_widget.show()
+                fallback_label.hide()
+                media_player.setMedia(QMediaContent(QUrl.fromLocalFile(resolved)))
+                media_player.play()
+            else:
+                video_widget.hide()
+                fallback_label.show()
+                fallback_label.setText(
+                    "Video not found.\nSet path in Demo profile guidance video fields."
+                )
+            videos_row.addLayout(col, stretch=1)
+
+        button_row = QHBoxLayout()
+        button_row.addStretch(1)
+        btn_start = QPushButton("Start Capture", self)
+        btn_start.setStyleSheet(
+            "QPushButton {background-color: #16a34a; color: white; font-weight: 700; "
+            "padding: 6px 12px; border-radius: 8px;}"
+            "QPushButton:hover {background-color: #15803d;}"
+        )
+        btn_start.clicked.connect(self._accept_and_close)
+        button_row.addWidget(btn_start)
+
+        btn_close = QPushButton("Close", self)
+        btn_close.clicked.connect(self.reject)
+        button_row.addWidget(btn_close)
+        root.addLayout(button_row)
+
+    def _resolve_video_path(self, raw_path: str) -> str:
+        candidate = str(raw_path or "").strip()
+        if not candidate:
+            return ""
+        path = Path(candidate).expanduser()
+        if not path.is_absolute():
+            path = (Path(__file__).resolve().parent / path).resolve()
+        return str(path) if path.exists() else ""
+
+    def _on_media_status_changed(self, index: int, status: QMediaPlayer.MediaStatus) -> None:
+        if status != QMediaPlayer.EndOfMedia:
+            return
+        if 0 <= index < len(self._players):
+            player = self._players[index]
+            player.setPosition(0)
+            player.play()
+
+    def _accept_and_close(self) -> None:
+        self._accepted = True
+        self.accept()
+
+    def closeEvent(self, event):  # pragma: no cover - UI lifecycle
+        for player in self._players:
+            player.stop()
+        super().closeEvent(event)
 
 
 class DemoWindow(QWidget):
@@ -486,6 +616,8 @@ class DemoWindow(QWidget):
         if not self.routers_info:
             QMessageBox.warning(self, "No Routers", "No connected routers are available for demo capture.")
             return
+        if not self._show_capture_guidance_dialog():
+            return
 
         self.btn_capture.setEnabled(False)
         capture_duration = self._capture_duration()
@@ -494,6 +626,37 @@ class DemoWindow(QWidget):
         self._start_capture_progress(capture_duration)
         self._capture_thread = threading.Thread(target=self._run_capture_cycle, daemon=True)
         self._capture_thread.start()
+
+    def _show_capture_guidance_dialog(self) -> bool:
+        dlg = CSICaptureGuidanceDialog(
+            parent=self,
+            title=str(
+                self.demo_profile.get("capture_guidance_title", "CSI Capture Guidance")
+            ).strip()
+            or "CSI Capture Guidance",
+            message=str(
+                self.demo_profile.get(
+                    "capture_guidance_message",
+                    "Please perform one of these gestures.",
+                )
+            ).strip()
+            or "Please perform one of these gestures.",
+            left_label=str(
+                self.demo_profile.get("capture_guidance_video_left_label", "Gesture 1")
+            ).strip()
+            or "Gesture 1",
+            left_video_path=str(
+                self.demo_profile.get("capture_guidance_video_left_path", "")
+            ).strip(),
+            right_label=str(
+                self.demo_profile.get("capture_guidance_video_right_label", "Gesture 2")
+            ).strip()
+            or "Gesture 2",
+            right_video_path=str(
+                self.demo_profile.get("capture_guidance_video_right_path", "")
+            ).strip(),
+        )
+        return dlg.exec_() == QDialog.Accepted
 
     def _start_capture_progress(self, capture_duration: float) -> None:
         self._capture_started_at = time.monotonic()
