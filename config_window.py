@@ -397,6 +397,25 @@ DEFAULT_DEMO_PROFILE = {
     "icassp_title_text": "IEEE ICASSP 2026",
     "authors_text": "Authors: Navid Hasanzadeh, Shahrokh Valaee",
     "university_text": "University of Toronto",
+    "subplot_settings": {
+        "csi_ratio_magnitude": {"visible": True, "title": "CSI Ratio Magnitude", "xlabel": "Time (s)", "ylabel": "|Ratio|", "info": "Shows CSI magnitude ratio between two TX antennas."},
+        "csi_ratio_phase": {"visible": True, "title": "CSI Ratio Phase", "xlabel": "Time (s)", "ylabel": "Phase (rad)", "info": "Shows CSI phase ratio between two TX antennas."},
+        "doppler_music": {"visible": True, "title": "Doppler MUSIC Projection", "xlabel": "Time (s)", "ylabel": "Norm. Doppler", "info": "Shows Doppler projections extracted from CSI streams."},
+        "dorf_loss": {"visible": True, "title": "DoRF DTW Loss", "xlabel": "Iteration", "ylabel": "Loss", "info": "Shows optimization loss across DoRF iterations."},
+        "dorf_velocity": {"visible": True, "title": "Estimated Velocity Components", "xlabel": "Time index", "ylabel": "Velocity", "info": "Shows estimated 3D velocity components."},
+        "dorf_energy": {"visible": True, "title": "Energy Envelope", "xlabel": "Time index", "ylabel": "Energy", "info": "Shows squared velocity magnitude over time."},
+        "dorf_projection_map": {"visible": True, "title": "Average DoRF Projection Map", "xlabel": "Longitude bins", "ylabel": "Latitude bins", "info": "Shows average DoRF projection map."},
+        "dorf_cluster_fit": {"visible": True, "title": "Cluster Fit", "xlabel": "Time index", "ylabel": "Amplitude", "info": "Compares observed and predicted cluster Doppler."},
+        "dorf_vmf_clusters": {"visible": True, "title": "vMF Clusters", "xlabel": "", "ylabel": "", "info": "Shows directional clusters on the unit sphere."},
+    },
+    "dorf_plot_order": [
+        "dorf_loss",
+        "dorf_velocity",
+        "dorf_energy",
+        "dorf_projection_map",
+        "dorf_cluster_fit",
+        "dorf_vmf_clusters",
+    ],
 }
 
 DEFAULT_WIFI_AP = {
@@ -910,6 +929,19 @@ def _load_demo_profiles_from_csv():
                     row.get("university_text")
                     or profile["university_text"]
                 ).strip() or DEFAULT_DEMO_PROFILE["university_text"]
+                raw_subplot_json = (row.get("subplot_settings_json") or "").strip()
+                if raw_subplot_json:
+                    try:
+                        parsed = json.loads(raw_subplot_json)
+                        if isinstance(parsed, dict):
+                            profile["subplot_settings"] = parsed
+                    except Exception:
+                        pass
+                order_text = (row.get("dorf_plot_order") or "").strip()
+                if order_text:
+                    profile["dorf_plot_order"] = [
+                        item.strip() for item in order_text.split(",") if item.strip()
+                    ]
                 profiles[profile_name] = profile
     except Exception:
         return {}
@@ -1803,6 +1835,8 @@ def save_demo_profiles(profiles: dict):
                 "icassp_title_text",
                 "authors_text",
                 "university_text",
+                "subplot_settings_json",
+                "dorf_plot_order",
             ]
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
@@ -1874,6 +1908,21 @@ def save_demo_profiles(profiles: dict):
                                 )
                             ).strip()
                             or DEFAULT_DEMO_PROFILE["university_text"]
+                        ),
+                        "subplot_settings_json": json.dumps(
+                            profile.get(
+                                "subplot_settings",
+                                DEFAULT_DEMO_PROFILE["subplot_settings"],
+                            ),
+                            ensure_ascii=False,
+                        ),
+                        "dorf_plot_order": ",".join(
+                            str(item).strip()
+                            for item in profile.get(
+                                "dorf_plot_order",
+                                DEFAULT_DEMO_PROFILE["dorf_plot_order"],
+                            )
+                            if str(item).strip()
                         ),
                     }
                 )
@@ -4172,6 +4221,19 @@ class ConfigDialog(QDialog):
         self.txt_demo_university.setPlaceholderText(DEFAULT_DEMO_PROFILE["university_text"])
         form.addRow("University text:", self.txt_demo_university)
 
+        self.txt_demo_subplot_settings = QTextEdit(self.grp_demo)
+        self.txt_demo_subplot_settings.setPlaceholderText(
+            "JSON object keyed by subplot category with: visible, title, xlabel, ylabel, info"
+        )
+        self.txt_demo_subplot_settings.setMinimumHeight(180)
+        form.addRow("Subplot settings (JSON):", self.txt_demo_subplot_settings)
+
+        self.txt_demo_dorf_plot_order = QLineEdit(self.grp_demo)
+        self.txt_demo_dorf_plot_order.setPlaceholderText(
+            ",".join(DEFAULT_DEMO_PROFILE["dorf_plot_order"])
+        )
+        form.addRow("DoRF plot order (comma-separated categories):", self.txt_demo_dorf_plot_order)
+
         help_label = QLabel(
             "Used by Wi-Fi Scenario 'Demo' for each CSI Capture button press.",
             self.grp_demo,
@@ -6348,6 +6410,20 @@ class ConfigDialog(QDialog):
                     )
                 )
             )
+        if hasattr(self, "txt_demo_subplot_settings"):
+            subplot_settings = profile.get(
+                "subplot_settings", deepcopy(DEFAULT_DEMO_PROFILE["subplot_settings"])
+            )
+            self.txt_demo_subplot_settings.setPlainText(
+                json.dumps(subplot_settings, indent=2, ensure_ascii=False)
+            )
+        if hasattr(self, "txt_demo_dorf_plot_order"):
+            order = profile.get("dorf_plot_order", DEFAULT_DEMO_PROFILE["dorf_plot_order"])
+            if isinstance(order, list):
+                order_text = ",".join(str(item).strip() for item in order if str(item).strip())
+            else:
+                order_text = str(order).strip()
+            self.txt_demo_dorf_plot_order.setText(order_text)
         self._set_profile_editable("demo", not _is_default_profile("demo", name))
 
     def _update_hand_controls_state(self):
@@ -7345,6 +7421,25 @@ class ConfigDialog(QDialog):
                 self.txt_demo_university.text().strip()
                 or DEFAULT_DEMO_PROFILE["university_text"]
             )
+        if hasattr(self, "txt_demo_subplot_settings"):
+            raw_json = self.txt_demo_subplot_settings.toPlainText().strip()
+            if raw_json:
+                try:
+                    parsed = json.loads(raw_json)
+                    if isinstance(parsed, dict):
+                        profile["subplot_settings"] = parsed
+                except Exception:
+                    pass
+            elif "subplot_settings" not in profile:
+                profile["subplot_settings"] = deepcopy(DEFAULT_DEMO_PROFILE["subplot_settings"])
+        if hasattr(self, "txt_demo_dorf_plot_order"):
+            order_text = self.txt_demo_dorf_plot_order.text().strip()
+            if order_text:
+                profile["dorf_plot_order"] = [
+                    item.strip() for item in order_text.split(",") if item.strip()
+                ]
+            elif "dorf_plot_order" not in profile:
+                profile["dorf_plot_order"] = deepcopy(DEFAULT_DEMO_PROFILE["dorf_plot_order"])
 
     def _update_current_wifi_from_ui(self):
         name = self.current_wifi_profile_name

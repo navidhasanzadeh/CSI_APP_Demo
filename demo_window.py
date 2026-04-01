@@ -54,6 +54,81 @@ try:  # pragma: no cover - optional dependency at runtime
 except ImportError:  # pragma: no cover - optional dependency at runtime
     hampel = None
 
+DEFAULT_SUBPLOT_SETTINGS = {
+    "csi_ratio_magnitude": {
+        "visible": True,
+        "title": "CSI Ratio Magnitude",
+        "xlabel": "Time (s)",
+        "ylabel": "|Ratio|",
+        "info": "Shows the CSI magnitude ratio between two TX antennas for each RX antenna stream.",
+    },
+    "csi_ratio_phase": {
+        "visible": True,
+        "title": "CSI Ratio Phase",
+        "xlabel": "Time (s)",
+        "ylabel": "Phase (rad)",
+        "info": "Shows the CSI phase ratio between two TX antennas for each RX antenna stream.",
+    },
+    "doppler_music": {
+        "visible": True,
+        "title": "Doppler MUSIC Projection",
+        "xlabel": "Time (s)",
+        "ylabel": "Norm. Doppler",
+        "info": "Shows Doppler projections extracted with a Root-MUSIC style estimator.",
+    },
+    "dorf_loss": {
+        "visible": True,
+        "title": "DoRF DTW Loss",
+        "xlabel": "Iteration",
+        "ylabel": "Loss",
+        "info": "Shows optimization loss across DoRF DTW iterations.",
+    },
+    "dorf_velocity": {
+        "visible": True,
+        "title": "Estimated Velocity Components",
+        "xlabel": "Time index",
+        "ylabel": "Velocity",
+        "info": "Shows estimated 3D velocity components over time.",
+    },
+    "dorf_energy": {
+        "visible": True,
+        "title": "Energy Envelope",
+        "xlabel": "Time index",
+        "ylabel": "Energy",
+        "info": "Shows energy envelope computed from estimated velocity magnitude squared.",
+    },
+    "dorf_projection_map": {
+        "visible": True,
+        "title": "Average DoRF Projection Map",
+        "xlabel": "Longitude bins",
+        "ylabel": "Latitude bins",
+        "info": "Shows the average DoRF spatial projection map.",
+    },
+    "dorf_cluster_fit": {
+        "visible": True,
+        "title": "Cluster Fit",
+        "xlabel": "Time index",
+        "ylabel": "Amplitude",
+        "info": "Compares observed and predicted Doppler signals for each DoRF cluster.",
+    },
+    "dorf_vmf_clusters": {
+        "visible": True,
+        "title": "vMF Clusters",
+        "xlabel": "",
+        "ylabel": "",
+        "info": "Shows unit-direction cluster assignments on a sphere (vMF clustering).",
+    },
+}
+
+DEFAULT_DORF_PLOT_ORDER = [
+    "dorf_loss",
+    "dorf_velocity",
+    "dorf_energy",
+    "dorf_projection_map",
+    "dorf_cluster_fit",
+    "dorf_vmf_clusters",
+]
+
 
 class DemoWindow(QWidget):
     capture_finished = pyqtSignal(bool, str)
@@ -325,6 +400,63 @@ class DemoWindow(QWidget):
 
     def _capture_duration(self) -> float:
         return max(float(self.demo_profile.get("capture_duration_seconds", 5.0)), 1.0)
+
+    def _subplot_setting(self, category: str) -> dict:
+        settings = dict(DEFAULT_SUBPLOT_SETTINGS.get(category, {}))
+        profile_settings = self.demo_profile.get("subplot_settings", {})
+        if isinstance(profile_settings, dict):
+            custom = profile_settings.get(category, {})
+            if isinstance(custom, dict):
+                settings.update(custom)
+        return settings
+
+    def _subplot_visible(self, category: str) -> bool:
+        return bool(self._subplot_setting(category).get("visible", True))
+
+    def _subplot_text(self, category: str, key: str, fallback: str) -> str:
+        value = str(self._subplot_setting(category).get(key, fallback)).strip()
+        return value or fallback
+
+    def _apply_subplot_labels(
+        self,
+        ax,
+        *,
+        category: str,
+        default_title: str,
+        default_xlabel: str,
+        default_ylabel: str,
+    ) -> None:
+        ax.set_title(self._subplot_text(category, "title", default_title))
+        xlabel = self._subplot_text(category, "xlabel", default_xlabel)
+        ylabel = self._subplot_text(category, "ylabel", default_ylabel)
+        if xlabel:
+            ax.set_xlabel(xlabel)
+        if ylabel:
+            ax.set_ylabel(ylabel)
+        ax._subplot_category = category
+
+    def _subplot_info_text(self, category: str, fallback_title: str) -> tuple[str, str]:
+        title = self._subplot_text(category, "title", fallback_title)
+        info = self._subplot_text(
+            category,
+            "info",
+            "No additional information configured for this subplot.",
+        )
+        return title, info
+
+    def _dorf_plot_order(self) -> list[str]:
+        value = self.demo_profile.get("dorf_plot_order", DEFAULT_DORF_PLOT_ORDER)
+        if isinstance(value, str):
+            requested = [item.strip() for item in value.split(",") if item.strip()]
+        elif isinstance(value, list):
+            requested = [str(item).strip() for item in value if str(item).strip()]
+        else:
+            requested = []
+        valid = [item for item in requested if item in DEFAULT_DORF_PLOT_ORDER]
+        for item in DEFAULT_DORF_PLOT_ORDER:
+            if item not in valid:
+                valid.append(item)
+        return valid
 
     def _on_capture_clicked(self):
         if self._capture_thread and self._capture_thread.is_alive():
@@ -607,22 +739,36 @@ class DemoWindow(QWidget):
 
             ax_mag = self.figure.add_subplot(grid[row_idx, 0])
             ax_phase = self.figure.add_subplot(grid[row_idx, 1], sharex=ax_mag)
+            mag_category = "csi_ratio_magnitude"
+            phase_category = "csi_ratio_phase"
 
-            ax_mag.plot(x, ratio_mag, color="tab:blue", linewidth=0.9)
-            ax_mag.margins(x=0.08, y=0.25)
-            ax_mag.set_ylabel("|Ratio|")
-            ax_mag.set_title(f"RX {rx_idx + 1}: TX {tx_num + 1}/TX {tx_den + 1} Magnitude")
-            ax_mag.grid(True)
+            if self._subplot_visible(mag_category):
+                ax_mag.plot(x, ratio_mag, color="tab:blue", linewidth=0.9)
+                ax_mag.margins(x=0.08, y=0.25)
+                self._apply_subplot_labels(
+                    ax_mag,
+                    category=mag_category,
+                    default_title=f"RX {rx_idx + 1}: TX {tx_num + 1}/TX {tx_den + 1} Magnitude",
+                    default_xlabel=x_label,
+                    default_ylabel="|Ratio|",
+                )
+                ax_mag.grid(True)
+            else:
+                ax_mag.set_axis_off()
 
-            ax_phase.plot(x, ratio_phase, color="tab:green", linewidth=0.9)
-            ax_phase.margins(x=0.08, y=0.25)
-            ax_phase.set_ylabel("Phase (rad)")
-            ax_phase.set_title(f"RX {rx_idx + 1}: TX {tx_num + 1}/TX {tx_den + 1} Phase")
-            ax_phase.grid(True)
-
-            if row_idx == total_pairs - 1:
-                ax_mag.set_xlabel(x_label)
-                ax_phase.set_xlabel(x_label)
+            if self._subplot_visible(phase_category):
+                ax_phase.plot(x, ratio_phase, color="tab:green", linewidth=0.9)
+                ax_phase.margins(x=0.08, y=0.25)
+                self._apply_subplot_labels(
+                    ax_phase,
+                    category=phase_category,
+                    default_title=f"RX {rx_idx + 1}: TX {tx_num + 1}/TX {tx_den + 1} Phase",
+                    default_xlabel=x_label,
+                    default_ylabel="Phase (rad)",
+                )
+                ax_phase.grid(True)
+            else:
+                ax_phase.set_axis_off()
 
         self.figure.subplots_adjust(left=0.08, right=0.92, top=0.96, bottom=0.07)
         self._install_subplot_maximize_buttons(self.figure, self.canvas)
@@ -746,11 +892,18 @@ class DemoWindow(QWidget):
                     va="center",
                     fontsize=9,
                 )
-            ax.set_ylabel("Norm. Doppler")
-            ax.set_title(f"RX {rx_idx + 1}: TX {tx_pair[0] + 1}/TX {tx_pair[1] + 1} MUSIC")
-            ax.grid(True)
-            if row_idx >= total_pairs - ncols:
-                ax.set_xlabel(x_label)
+            category = "doppler_music"
+            if self._subplot_visible(category):
+                self._apply_subplot_labels(
+                    ax,
+                    category=category,
+                    default_title=f"RX {rx_idx + 1}: TX {tx_pair[0] + 1}/TX {tx_pair[1] + 1} MUSIC",
+                    default_xlabel=x_label,
+                    default_ylabel="Norm. Doppler",
+                )
+                ax.grid(True)
+            else:
+                ax.set_axis_off()
         if total_pairs % ncols:
             spare_ax = self.doppler_figure.add_subplot(grid[-1, -1])
             spare_ax.set_axis_off()
@@ -817,7 +970,14 @@ class DemoWindow(QWidget):
         kept_dirs = dorf_meta.get("kept_dirs", best_r[kept_ids] if kept_ids.size else np.empty((0, 3)))
         labels = dorf_meta.get("labels", np.zeros(kept_dirs.shape[0], dtype=int))
 
-        panel_count = 4 + len(cluster_stats) + 1
+        ordered_panels: list[tuple[str, object]] = []
+        for key in self._dorf_plot_order():
+            if key == "dorf_cluster_fit":
+                ordered_panels.extend([(key, stat) for stat in cluster_stats])
+            else:
+                ordered_panels.append((key, None))
+        visible_panels = [panel for panel in ordered_panels if self._subplot_visible(panel[0])]
+        panel_count = max(len(visible_panels), 1)
         ncols = 2
         nrows = int(ceil(panel_count / ncols))
         grid = self.dorf_figure.add_gridspec(nrows, ncols, hspace=0.6, wspace=0.28)
@@ -826,89 +986,117 @@ class DemoWindow(QWidget):
         self.dorf_canvas.setMinimumHeight(int(fig_height * self.dorf_figure.get_dpi()))
 
         panel_idx = 0
-        ax_loss = self.dorf_figure.add_subplot(grid[panel_idx // ncols, panel_idx % ncols])
-        panel_idx += 1
-        ax_loss.plot(loss_hist, marker="o", color="tab:blue", linewidth=1.0)
-        ax_loss.set_title(f"DoRF DTW loss (best={best_loss:.4f})")
-        ax_loss.set_ylabel("Loss")
-        ax_loss.set_xlabel("Iteration")
-        ax_loss.grid(True)
-
-        ax_vel = self.dorf_figure.add_subplot(grid[panel_idx // ncols, panel_idx % ncols])
-        panel_idx += 1
-        for dim, label in enumerate(("v_x", "v_y", "v_z")):
-            ax_vel.plot(best_v[:, dim], label=label, linewidth=0.95)
-        ax_vel.set_title("Estimated velocity components")
-        ax_vel.set_xlabel("Time index")
-        ax_vel.set_ylabel("Velocity")
-        ax_vel.legend(loc="upper right")
-        ax_vel.grid(True)
-
-        ax_energy = self.dorf_figure.add_subplot(grid[panel_idx // ncols, panel_idx % ncols])
-        panel_idx += 1
-        ax_energy.plot((best_v ** 2).sum(axis=1), label="‖v_est‖²", color="tab:green", linewidth=1.0)
-        ax_energy.set_title("Energy envelope")
-        ax_energy.set_xlabel("Time index")
-        ax_energy.set_ylabel("Energy")
-        ax_energy.legend(loc="upper right")
-        ax_energy.grid(True)
-
-        ax_proj = self.dorf_figure.add_subplot(grid[panel_idx // ncols, panel_idx % ncols])
-        panel_idx += 1
-        projection_map = proj_images.mean(axis=0)
-        im = ax_proj.imshow(projection_map, cmap="seismic", aspect="auto", origin="upper")
-        kept = int(np.sum(best_mask)) if best_mask is not None else 0
-        ax_proj.set_title(f"Average DoRF projection map ({kept}/{doppler_matrix.shape[1]} kept)")
-        ax_proj.set_xlabel("Longitude bins")
-        ax_proj.set_ylabel("Latitude bins")
-        self.dorf_figure.colorbar(im, ax=ax_proj, orientation="vertical", fraction=0.045, pad=0.02)
-
-        for cid, _, _, ap, perc, idxs in cluster_stats:
-            ax_cluster = self.dorf_figure.add_subplot(grid[panel_idx // ncols, panel_idx % ncols])
-            panel_idx += 1
-            obs = doppler_matrix[:, kept_ids[idxs]].mean(axis=1)
-            pred = (best_v @ best_r[kept_ids[idxs]].T).mean(axis=1)
-            ax_cluster.plot(obs, label="obs", linewidth=1.0)
-            ax_cluster.plot(pred, label="pred", linewidth=1.0)
-            ax_cluster.set_title(f"Cluster {cid} (dom Ant{ap}, {perc:.0f}%)")
-            ax_cluster.set_xlabel("Time index")
-            ax_cluster.grid(True)
-            ax_cluster.legend(loc="upper right")
-
-        ax_sphere = self.dorf_figure.add_subplot(
-            grid[panel_idx // ncols, panel_idx % ncols], projection="3d"
-        )
-        panel_idx += 1
-        u, vang = np.mgrid[0 : 2 * np.pi : 60j, 0 : np.pi : 30j]
-        ax_sphere.plot_surface(
-            np.cos(u) * np.sin(vang),
-            np.sin(u) * np.sin(vang),
-            np.cos(vang),
-            alpha=0.1,
-            color="gray",
-            linewidth=0,
-        )
-        if kept_dirs.size:
-            ax_sphere.scatter(
-                kept_dirs[:, 0],
-                kept_dirs[:, 1],
-                kept_dirs[:, 2],
-                c=cm.tab10(labels % 10),
-                s=30,
-            )
-            kappa_max = max(stat[2] for stat in cluster_stats) + 1e-9 if cluster_stats else 1.0
-            for cid, mu, kappa, ap, perc, _ in cluster_stats:
-                ax_sphere.quiver(0, 0, 0, *mu, length=1, color="k", linewidth=2 + 4 * kappa / kappa_max)
-                ax_sphere.text(*(1.08 * mu), f"κ={kappa:.1f}\nAnt{ap} {perc:.0f}%", ha="center")
-        ax_sphere.set_title("vMF clusters")
-        ax_sphere.set_xlim([-1.2, 1.2])
-        ax_sphere.set_ylim([-1.2, 1.2])
-        ax_sphere.set_zlim([-1.2, 1.2])
-        ax_sphere._vmf_plot_payload = {
-            "kept_dirs": np.asarray(kept_dirs),
-            "cluster_stats": list(cluster_stats),
-            "doppler_vectors": np.asarray(doppler_matrix[:, kept_ids]).T if kept_ids.size else np.empty((0, 0)),
-        }
+        for category, payload in visible_panels:
+            if category == "dorf_loss":
+                ax_loss = self.dorf_figure.add_subplot(grid[panel_idx // ncols, panel_idx % ncols])
+                panel_idx += 1
+                ax_loss.plot(loss_hist, marker="o", color="tab:blue", linewidth=1.0)
+                self._apply_subplot_labels(
+                    ax_loss,
+                    category=category,
+                    default_title=f"DoRF DTW loss (best={best_loss:.4f})",
+                    default_xlabel="Iteration",
+                    default_ylabel="Loss",
+                )
+                ax_loss.grid(True)
+            elif category == "dorf_velocity":
+                ax_vel = self.dorf_figure.add_subplot(grid[panel_idx // ncols, panel_idx % ncols])
+                panel_idx += 1
+                for dim, label in enumerate(("v_x", "v_y", "v_z")):
+                    ax_vel.plot(best_v[:, dim], label=label, linewidth=0.95)
+                self._apply_subplot_labels(
+                    ax_vel,
+                    category=category,
+                    default_title="Estimated velocity components",
+                    default_xlabel="Time index",
+                    default_ylabel="Velocity",
+                )
+                ax_vel.legend(loc="upper right")
+                ax_vel.grid(True)
+            elif category == "dorf_energy":
+                ax_energy = self.dorf_figure.add_subplot(grid[panel_idx // ncols, panel_idx % ncols])
+                panel_idx += 1
+                ax_energy.plot((best_v ** 2).sum(axis=1), label="‖v_est‖²", color="tab:green", linewidth=1.0)
+                self._apply_subplot_labels(
+                    ax_energy,
+                    category=category,
+                    default_title="Energy envelope",
+                    default_xlabel="Time index",
+                    default_ylabel="Energy",
+                )
+                ax_energy.legend(loc="upper right")
+                ax_energy.grid(True)
+            elif category == "dorf_projection_map":
+                ax_proj = self.dorf_figure.add_subplot(grid[panel_idx // ncols, panel_idx % ncols])
+                panel_idx += 1
+                projection_map = proj_images.mean(axis=0)
+                im = ax_proj.imshow(projection_map, cmap="seismic", aspect="auto", origin="upper")
+                kept = int(np.sum(best_mask)) if best_mask is not None else 0
+                self._apply_subplot_labels(
+                    ax_proj,
+                    category=category,
+                    default_title=f"Average DoRF projection map ({kept}/{doppler_matrix.shape[1]} kept)",
+                    default_xlabel="Longitude bins",
+                    default_ylabel="Latitude bins",
+                )
+                self.dorf_figure.colorbar(
+                    im, ax=ax_proj, orientation="vertical", fraction=0.045, pad=0.02
+                )
+            elif category == "dorf_cluster_fit" and payload is not None:
+                cid, _, _, ap, perc, idxs = payload
+                ax_cluster = self.dorf_figure.add_subplot(grid[panel_idx // ncols, panel_idx % ncols])
+                panel_idx += 1
+                obs = doppler_matrix[:, kept_ids[idxs]].mean(axis=1)
+                pred = (best_v @ best_r[kept_ids[idxs]].T).mean(axis=1)
+                ax_cluster.plot(obs, label="obs", linewidth=1.0)
+                ax_cluster.plot(pred, label="pred", linewidth=1.0)
+                self._apply_subplot_labels(
+                    ax_cluster,
+                    category=category,
+                    default_title=f"Cluster {cid} (dom Ant{ap}, {perc:.0f}%)",
+                    default_xlabel="Time index",
+                    default_ylabel="Amplitude",
+                )
+                ax_cluster.grid(True)
+                ax_cluster.legend(loc="upper right")
+            elif category == "dorf_vmf_clusters":
+                ax_sphere = self.dorf_figure.add_subplot(
+                    grid[panel_idx // ncols, panel_idx % ncols], projection="3d"
+                )
+                panel_idx += 1
+                u, vang = np.mgrid[0 : 2 * np.pi : 60j, 0 : np.pi : 30j]
+                ax_sphere.plot_surface(
+                    np.cos(u) * np.sin(vang),
+                    np.sin(u) * np.sin(vang),
+                    np.cos(vang),
+                    alpha=0.1,
+                    color="gray",
+                    linewidth=0,
+                )
+                if kept_dirs.size:
+                    ax_sphere.scatter(
+                        kept_dirs[:, 0],
+                        kept_dirs[:, 1],
+                        kept_dirs[:, 2],
+                        c=cm.tab10(labels % 10),
+                        s=30,
+                    )
+                    kappa_max = max(stat[2] for stat in cluster_stats) + 1e-9 if cluster_stats else 1.0
+                    for cid, mu, kappa, ap, perc, _ in cluster_stats:
+                        ax_sphere.quiver(
+                            0, 0, 0, *mu, length=1, color="k", linewidth=2 + 4 * kappa / kappa_max
+                        )
+                        ax_sphere.text(*(1.08 * mu), f"κ={kappa:.1f}\nAnt{ap} {perc:.0f}%", ha="center")
+                ax_sphere.set_title(self._subplot_text(category, "title", "vMF clusters"))
+                ax_sphere._subplot_category = category
+                ax_sphere.set_xlim([-1.2, 1.2])
+                ax_sphere.set_ylim([-1.2, 1.2])
+                ax_sphere.set_zlim([-1.2, 1.2])
+                ax_sphere._vmf_plot_payload = {
+                    "kept_dirs": np.asarray(kept_dirs),
+                    "cluster_stats": list(cluster_stats),
+                    "doppler_vectors": np.asarray(doppler_matrix[:, kept_ids]).T if kept_ids.size else np.empty((0, 0)),
+                }
 
         while panel_idx < nrows * ncols:
             empty_ax = self.dorf_figure.add_subplot(grid[panel_idx // ncols, panel_idx % ncols])
@@ -936,6 +1124,7 @@ class DemoWindow(QWidget):
         button_px = 14.0
         btn_w = button_px / figure_px_w
         btn_h = button_px / figure_px_h
+        gap_w = (2.0 / figure_px_w)
         for ax in figure.axes:
             if not ax.get_visible() or ax.get_label() == "<colorbar>":
                 continue
@@ -949,8 +1138,21 @@ class DemoWindow(QWidget):
             button.on_clicked(lambda _evt, source_ax=ax: self._open_subplot_window(source_ax))
             button_refs.append((button_ax, button))
 
+            info_x0 = min(max(x0 - btn_w - gap_w, 0.002), 0.998 - btn_w)
+            info_button_ax = figure.add_axes([info_x0, y0, btn_w, btn_h])
+            info_button = MatplotlibButton(info_button_ax, "?")
+            info_button.label.set_fontsize(8)
+            info_button.on_clicked(lambda _evt, source_ax=ax: self._show_subplot_info(source_ax))
+            button_refs.append((info_button_ax, info_button))
+
         self._figure_maximize_buttons[figure] = button_refs
         canvas.draw_idle()
+
+    def _show_subplot_info(self, source_ax) -> None:
+        category = getattr(source_ax, "_subplot_category", "")
+        fallback_title = source_ax.get_title() or "Subplot"
+        title, info = self._subplot_info_text(category, fallback_title)
+        QMessageBox.information(self, f"Plot Info: {title}", info)
 
     def _open_subplot_window(self, source_ax) -> None:
         window = QWidget(self, Qt.Window)
