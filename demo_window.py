@@ -11,7 +11,6 @@ from itertools import combinations
 from math import ceil
 
 import numpy as np
-import scipy.linalg as LA
 from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg as FigureCanvas,
     NavigationToolbar2QT as NavigationToolbar,
@@ -133,6 +132,9 @@ DEFAULT_DORF_PLOT_ORDER = [
 class DemoWindow(QWidget):
     capture_finished = pyqtSignal(bool, str)
     plot_requested = pyqtSignal(str, int)
+    doppler_ready = pyqtSignal(object)
+    dorf_ready = pyqtSignal(object)
+    background_plot_failed = pyqtSignal(str)
 
     def __init__(
         self,
@@ -161,6 +163,9 @@ class DemoWindow(QWidget):
 
         self.capture_finished.connect(self._on_capture_finished)
         self.plot_requested.connect(self._on_plot_requested)
+        self.doppler_ready.connect(self._on_doppler_ready)
+        self.dorf_ready.connect(self._on_dorf_ready)
+        self.background_plot_failed.connect(self._on_background_plot_failed)
         self._build_ui()
 
     def _build_ui(self):
@@ -237,7 +242,16 @@ class DemoWindow(QWidget):
         self.demo_tabs = QTabWidget(self)
         self.demo_tabs.setStyleSheet(
             "QTabWidget::pane { border: 1px solid #cfd8e3; border-radius: 8px; background: #ffffff; }"
-            "QTabBar::tab { padding: 5px 9px; font-size: 12px; }"
+            "QTabBar::tab { padding: 6px 10px; font-size: 12px; font-weight: 700; margin-right: 2px; border-top-left-radius: 8px; border-top-right-radius: 8px; }"
+            "QTabBar::tab:selected { color: white; }"
+            "QTabBar::tab:!selected { color: #111827; }"
+            "QTabBar::tab:nth-child(1) { background: #93c5fd; }"
+            "QTabBar::tab:nth-child(1):selected { background: #2563eb; }"
+            "QTabBar::tab:nth-child(2) { background: #86efac; }"
+            "QTabBar::tab:nth-child(2):selected { background: #16a34a; }"
+            "QTabBar::tab:nth-child(3) { background: #fca5a5; }"
+            "QTabBar::tab:nth-child(3):selected { background: #dc2626; }"
+            "QTabBar::tab:disabled { background: #e5e7eb; color: #9ca3af; }"
         )
         csi_tab = QWidget(self.demo_tabs)
         csi_layout = QVBoxLayout(csi_tab)
@@ -249,7 +263,7 @@ class DemoWindow(QWidget):
         )
         csi_layout.addWidget(self.chk_hampel_ratio_phase)
         csi_layout.addWidget(self.plot_scroll, stretch=1)
-        self.demo_tabs.addTab(csi_tab, "CSI Magnitude and Phase")
+        self.demo_tabs.addTab(csi_tab, "1. CSI Magnitude and Phase")
 
         doppler_proj_tab = QWidget(self.demo_tabs)
         doppler_proj_layout = QVBoxLayout(doppler_proj_tab)
@@ -263,7 +277,7 @@ class DemoWindow(QWidget):
             "QScrollArea {border: 1px solid #cfd8e3; border-radius: 10px; background: #ffffff;}"
         )
         doppler_proj_layout.addWidget(self.doppler_scroll, stretch=1)
-        self.demo_tabs.addTab(doppler_proj_tab, "Doppler Projections")
+        self.demo_tabs.addTab(doppler_proj_tab, "2. Doppler Projections")
 
         dorf_tab = QWidget(self.demo_tabs)
         dorf_layout = QVBoxLayout(dorf_tab)
@@ -281,7 +295,7 @@ class DemoWindow(QWidget):
             "QScrollArea {border: 1px solid #cfd8e3; border-radius: 10px; background: #ffffff;}"
         )
         dorf_layout.addWidget(self.dorf_scroll, stretch=1)
-        self.demo_tabs.addTab(dorf_tab, "Doppler Radiance Fields (DoRF)")
+        self.demo_tabs.addTab(dorf_tab, "3. Doppler Radiance Fields (DoRF)")
 
         content_row = QHBoxLayout()
         content_row.addWidget(self.demo_tabs, stretch=4)
@@ -342,6 +356,16 @@ class DemoWindow(QWidget):
         bottom_row.addLayout(button_row)
 
         root.addLayout(bottom_row)
+        self._set_tab_processing_state(allow_primary_only=True)
+
+    def _set_tab_processing_state(self, allow_primary_only: bool = False) -> None:
+        tab_bar = self.demo_tabs.tabBar()
+        tab_bar.setTabEnabled(0, True)
+        tab_bar.setTabEnabled(1, not allow_primary_only)
+        tab_bar.setTabEnabled(2, not allow_primary_only)
+
+    def _mark_tab_ready(self, tab_idx: int) -> None:
+        self.demo_tabs.tabBar().setTabEnabled(tab_idx, True)
 
     def _demo_title_text(self) -> str:
         text = str(self.demo_profile.get("demo_title_text") or "").strip()
@@ -469,6 +493,7 @@ class DemoWindow(QWidget):
         self.btn_capture.setEnabled(False)
         capture_duration = self._capture_duration()
         self.status_label.setText("Capturing CSI... Please perform the target activity now.")
+        self._set_tab_processing_state(allow_primary_only=True)
         self._start_capture_progress(capture_duration)
         self._capture_thread = threading.Thread(target=self._run_capture_cycle, daemon=True)
         self._capture_thread.start()
@@ -773,15 +798,45 @@ class DemoWindow(QWidget):
         self.figure.subplots_adjust(left=0.08, right=0.92, top=0.96, bottom=0.07)
         self._install_subplot_maximize_buttons(self.figure, self.canvas)
         self.canvas.draw_idle()
-        self._plot_doppler_music(csi_data, time_vals, packet_count, tx_pairs)
+        self._set_tab_processing_state(allow_primary_only=True)
+        self.status_label.setText("CSI magnitude/phase plotted. Processing Doppler and DoRF in background...")
+        worker = threading.Thread(
+            target=self._run_background_plot_pipeline,
+            args=(csi_data, time_vals, packet_count, tx_pairs),
+            daemon=True,
+        )
+        worker.start()
 
     def _on_plot_requested(self, pcap_path: str, bandwidth_mhz: int):
         self._plot_ratio(Path(pcap_path), int(bandwidth_mhz))
 
+    def _run_background_plot_pipeline(
+        self, csi_data: np.ndarray, time_vals: np.ndarray, packet_count: int, tx_pairs: list[tuple[int, int]]
+    ) -> None:
+        try:
+            doppler_payload = self._compute_doppler_payload(csi_data, time_vals, packet_count, tx_pairs)
+            self.doppler_ready.emit(doppler_payload)
+            dorf_payload = self._compute_dorf_payload(doppler_payload["dopplers"])
+            self.dorf_ready.emit(dorf_payload)
+        except Exception as exc:
+            self.background_plot_failed.emit(str(exc))
+
+    def _on_doppler_ready(self, payload: dict) -> None:
+        self._plot_doppler_from_payload(payload)
+        self._mark_tab_ready(1)
+        self.status_label.setText("Doppler tab ready. DoRF is still processing in background...")
+
+    def _on_dorf_ready(self, payload: dict) -> None:
+        self._plot_dorf_from_payload(payload)
+        self._mark_tab_ready(2)
+        self.status_label.setText("All demo tabs are ready.")
+
+    def _on_background_plot_failed(self, message: str) -> None:
+        self.status_label.setText(f"Background plotting failed: {message}")
+
     def _root_music_csi_like(
         self, sample_data: np.ndarray, do_cov_processing: bool = False, L: int = 1
     ) -> np.ndarray:
-        """Use original DoRF Root_MUSIC_CSI routine for Doppler projection."""
         _ = do_cov_processing
         if sample_data.ndim != 2 or sample_data.shape[1] < 32:
             return np.array([], dtype=float)
@@ -797,9 +852,6 @@ class DemoWindow(QWidget):
             h = sig_window.T
             covariance = h @ h.conj().T
             covariance = np.nan_to_num(covariance)
-            eigvals, eigvecs = LA.eig(covariance)
-            eigvals = np.abs(eigvals)
-            _ = (eigvals, eigvecs)
             estimator = estimation.RootMUSIC1D(1.0)
             _, estimates = estimator.estimate(covariance, L)
             doppler_vector.append(estimates.locations)
@@ -808,7 +860,6 @@ class DemoWindow(QWidget):
     def _extract_csi_ratio_for_stream(
         self, csi_data: np.ndarray, rx_idx: int, tx_pair: tuple[int, int]
     ) -> np.ndarray:
-        """Apply DoRF CSI-ratio preprocessing for a single RX/TX stream pair."""
         tx_num, tx_den = tx_pair
         ratio_chunks: list[np.ndarray] = []
         max_subants = min(4, csi_data.shape[1] // 64)
@@ -844,43 +895,57 @@ class DemoWindow(QWidget):
             return np.array([], dtype=np.complex128)
         return csi_ratio[:, good_subcarriers]
 
-    def _plot_doppler_music(
-        self,
-        csi_data: np.ndarray,
-        time_vals: np.ndarray,
-        packet_count: int,
-        tx_pairs: list[tuple[int, int]],
-    ) -> None:
+    def _compute_doppler_payload(
+        self, csi_data: np.ndarray, time_vals: np.ndarray, packet_count: int, tx_pairs: list[tuple[int, int]]
+    ) -> dict:
         rx_count = csi_data.shape[2] if csi_data.ndim >= 3 else 1
-        total_pairs = rx_count * len(tx_pairs)
-        self.doppler_figure.clear()
-        if total_pairs == 0:
-            self.doppler_canvas.draw_idle()
-            return
         if time_vals.size == packet_count:
-            x = time_vals
+            x = np.asarray(time_vals, dtype=float)
             x_label = "Time (s)"
         else:
             x = np.arange(packet_count)
             x_label = "Packet index"
+        series = []
+        dopplers = []
+        for rx_idx in range(rx_count):
+            for tx_pair in tx_pairs:
+                csi_ratio = self._extract_csi_ratio_for_stream(csi_data, rx_idx, tx_pair)
+                music_output = self._root_music_csi_like(csi_ratio.T) if csi_ratio.size else np.array([])
+                music_output = np.asarray(music_output, dtype=float)
+                dopplers.append(music_output)
+                series.append(
+                    {
+                        "rx_idx": rx_idx,
+                        "tx_pair": tx_pair,
+                        "music_output": music_output,
+                        "x": x[: music_output.size],
+                        "x_label": x_label,
+                    }
+                )
+        return {"series": series, "dopplers": dopplers}
 
+    def _plot_doppler_from_payload(self, payload: dict) -> None:
+        series = payload.get("series", [])
+        total_pairs = len(series)
+        self.doppler_figure.clear()
+        if total_pairs == 0:
+            self.doppler_canvas.draw_idle()
+            return
         ncols = 2
         nrows = int(ceil(total_pairs / ncols))
         grid = self.doppler_figure.add_gridspec(nrows, ncols, hspace=0.6, wspace=0.25)
         fig_height = max(8, nrows * 2.4)
         self.doppler_figure.set_size_inches(11, fig_height)
         self.doppler_canvas.setMinimumHeight(int(fig_height * self.doppler_figure.get_dpi()))
-        dopplers: list[np.ndarray] = []
 
-        for row_idx, (rx_idx, tx_pair) in enumerate(
-            (rx_tx for rx_tx in ((r, pair) for r in range(rx_count) for pair in tx_pairs))
-        ):
-            csi_ratio = self._extract_csi_ratio_for_stream(csi_data, rx_idx, tx_pair)
-            music_output = self._root_music_csi_like(csi_ratio.T) if csi_ratio.size else np.array([])
-            dopplers.append(np.asarray(music_output, dtype=float))
+        for row_idx, item in enumerate(series):
+            rx_idx = int(item["rx_idx"])
+            tx_pair = tuple(item["tx_pair"])
+            music_output = np.asarray(item["music_output"], dtype=float)
+            x_trim = np.asarray(item["x"], dtype=float)
+            x_label = str(item["x_label"])
             ax = self.doppler_figure.add_subplot(grid[row_idx // ncols, row_idx % ncols])
             if music_output.size:
-                x_trim = x[: music_output.size]
                 ax.plot(x_trim, music_output, color="tab:purple", linewidth=0.9)
             else:
                 ax.text(
@@ -910,39 +975,15 @@ class DemoWindow(QWidget):
         self.doppler_figure.subplots_adjust(left=0.08, right=0.95, top=0.96, bottom=0.08)
         self._install_subplot_maximize_buttons(self.doppler_figure, self.doppler_canvas)
         self.doppler_canvas.draw_idle()
-        self._plot_dorf_from_dopplers(dopplers)
 
-    def _plot_dorf_from_dopplers(self, dopplers: list[np.ndarray]) -> None:
-        self.dorf_figure.clear()
+    def _compute_dorf_payload(self, dopplers: list[np.ndarray]) -> dict:
         if len(dopplers) < 24:
-            ax = self.dorf_figure.add_subplot(111)
-            ax.text(
-                0.5,
-                0.5,
-                "Need 24 Doppler projections for DoRF velocity estimation.",
-                transform=ax.transAxes,
-                ha="center",
-                va="center",
-            )
-            ax.set_axis_off()
-            self.dorf_canvas.draw_idle()
-            return
+            return {"status": "insufficient", "message": "Need 24 Doppler projections for DoRF velocity estimation."}
 
         selected = [np.asarray(v, dtype=float).reshape(-1) for v in dopplers[:24]]
         min_len = min((v.size for v in selected), default=0)
         if min_len == 0:
-            ax = self.dorf_figure.add_subplot(111)
-            ax.text(
-                0.5,
-                0.5,
-                "DoRF estimation skipped: at least one Doppler projection is empty.",
-                transform=ax.transAxes,
-                ha="center",
-                va="center",
-            )
-            ax.set_axis_off()
-            self.dorf_canvas.draw_idle()
-            return
+            return {"status": "insufficient", "message": "DoRF estimation skipped: at least one Doppler projection is empty."}
 
         doppler_matrix = np.vstack([v[:min_len] for v in selected]).T
         for i in range(doppler_matrix.shape[1]):
@@ -964,6 +1005,43 @@ class DemoWindow(QWidget):
             max_clusters=2,
             return_metadata=True,
         )
+
+        return {
+            "status": "ok",
+            "doppler_matrix": doppler_matrix,
+            "best_v": best_v,
+            "best_r": best_r,
+            "best_mask": best_mask,
+            "best_loss": best_loss,
+            "loss_hist": loss_hist,
+            "proj_images": proj_images,
+            "dorf_meta": dorf_meta,
+        }
+
+    def _plot_dorf_from_payload(self, payload: dict) -> None:
+        self.dorf_figure.clear()
+        if payload.get("status") != "ok":
+            ax = self.dorf_figure.add_subplot(111)
+            ax.text(
+                0.5,
+                0.5,
+                str(payload.get("message", "Need 24 Doppler projections for DoRF velocity estimation.")),
+                transform=ax.transAxes,
+                ha="center",
+                va="center",
+            )
+            ax.set_axis_off()
+            self.dorf_canvas.draw_idle()
+            return
+
+        doppler_matrix = np.asarray(payload["doppler_matrix"], dtype=float)
+        best_v = np.asarray(payload["best_v"], dtype=float)
+        best_r = np.asarray(payload["best_r"], dtype=float)
+        best_mask = np.asarray(payload["best_mask"], dtype=bool)
+        best_loss = float(payload["best_loss"])
+        loss_hist = np.asarray(payload["loss_hist"], dtype=float)
+        proj_images = np.asarray(payload["proj_images"], dtype=float)
+        dorf_meta = dict(payload.get("dorf_meta") or {})
 
         cluster_stats = dorf_meta.get("cluster_stats", [])
         kept_ids = dorf_meta.get("kept_ids", np.where(best_mask)[0])
