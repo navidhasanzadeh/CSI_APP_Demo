@@ -65,7 +65,8 @@ def estimate_velocity_from_radial_old_dtw(
     support_ratio     = 0.10,
     use_support_dtw   = True,
     grid_res          = 60,
-    save_anim_path    = "projection_animation.mp4"
+    save_anim_path    = "projection_animation.mp4",
+    return_metadata   = False,
 ):
     """
     Returns
@@ -253,5 +254,15 @@ def estimate_velocity_from_radial_old_dtw(
         # writer = FFMpegWriter(fps=10, bitrate=1800)
         # anim.save("./" + save_anim_path, writer= 'imagemagick' )
         # plt.show()
+
+    if return_metadata:
+        metadata = {
+            "cluster_stats": cluster_stats,
+            "kept_ids": kept_ids,
+            "kept_dirs": kept_dirs,
+            "labels": labels,
+            "camera_numbers": camera_numbers,
+        }
+        return best_v, best_r, best_mask, best_loss, loss_hist, proj_images, np.array(clusters_sig), metadata
 
     return best_v, best_r, best_mask, best_loss, loss_hist, proj_images, np.array(clusters_sig)
