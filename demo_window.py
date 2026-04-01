@@ -903,6 +903,10 @@ class DemoWindow(QWidget):
         ax_sphere.set_xlim([-1.2, 1.2])
         ax_sphere.set_ylim([-1.2, 1.2])
         ax_sphere.set_zlim([-1.2, 1.2])
+        ax_sphere._vmf_plot_payload = {
+            "kept_dirs": np.asarray(kept_dirs),
+            "cluster_stats": list(cluster_stats),
+        }
 
         while panel_idx < nrows * ncols:
             empty_ax = self.dorf_figure.add_subplot(grid[panel_idx // ncols, panel_idx % ncols])
@@ -972,6 +976,35 @@ class DemoWindow(QWidget):
 
     @staticmethod
     def _copy_axis_contents(source_ax, target_ax) -> None:
+        vmf_payload = getattr(source_ax, "_vmf_plot_payload", None)
+        if vmf_payload is not None and source_ax.name == "3d" and target_ax.name == "3d":
+            u, vang = np.mgrid[0 : 2 * np.pi : 60j, 0 : np.pi : 30j]
+            target_ax.plot_surface(
+                np.cos(u) * np.sin(vang),
+                np.sin(u) * np.sin(vang),
+                np.cos(vang),
+                alpha=0.1,
+                color="gray",
+                linewidth=0,
+            )
+            kept_dirs = np.asarray(vmf_payload.get("kept_dirs", np.empty((0, 3))))
+            cluster_stats = vmf_payload.get("cluster_stats", [])
+            if kept_dirs.size:
+                labels = np.zeros(kept_dirs.shape[0], dtype=int)
+                for cid, _, _, _, _, idxs in cluster_stats:
+                    labels[np.asarray(idxs, dtype=int)] = int(cid)
+                target_ax.scatter(
+                    kept_dirs[:, 0],
+                    kept_dirs[:, 1],
+                    kept_dirs[:, 2],
+                    c=cm.tab10(labels % 10),
+                    s=30,
+                )
+                kappa_max = max(stat[2] for stat in cluster_stats) + 1e-9 if cluster_stats else 1.0
+                for _cid, mu, kappa, ap, perc, _ in cluster_stats:
+                    target_ax.quiver(0, 0, 0, *mu, length=1, color="k", linewidth=2 + 4 * kappa / kappa_max)
+                    target_ax.text(*(1.08 * mu), f"κ={kappa:.1f}\nAnt{ap} {perc:.0f}%", ha="center")
+
         for line in source_ax.get_lines():
             target_ax.plot(
                 line.get_xdata(),
