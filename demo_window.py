@@ -28,7 +28,7 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMessageBox,
-    QProgressDialog,
+    QProgressBar,
     QPushButton,
     QScrollArea,
     QFrame,
@@ -126,6 +126,8 @@ DEFAULT_DORF_PLOT_ORDER = [
 
 
 class CSICaptureGuidanceDialog(QDialog):
+    start_capture_requested = pyqtSignal()
+
     def __init__(
         self,
         *,
@@ -141,6 +143,7 @@ class CSICaptureGuidanceDialog(QDialog):
         self.setWindowTitle(title)
         self.resize(980, 560)
         self._accepted = False
+        self._capture_started = False
         self._players: list[QMediaPlayer] = []
         self._video_paths = [left_video_path, right_video_path]
         self._video_widgets: list[QVideoWidget] = []
@@ -209,20 +212,42 @@ class CSICaptureGuidanceDialog(QDialog):
                 )
             videos_row.addLayout(col, stretch=1)
 
+        self.capture_progress = QProgressBar(self)
+        self.capture_progress.setRange(0, 100)
+        self.capture_progress.setValue(0)
+        self.capture_progress.setFormat("Capture: 0%")
+        self.capture_progress.setStyleSheet("QProgressBar::chunk { background-color: #16a34a; }")
+        self.capture_progress.hide()
+        root.addWidget(self.capture_progress)
+
+        self.elapsed_label = QLabel("Elapsed: 0.0s", self)
+        self.elapsed_label.setAlignment(Qt.AlignCenter)
+        self.elapsed_label.setStyleSheet("font-size: 12px; font-weight: 600; color: #166534;")
+        self.elapsed_label.hide()
+        root.addWidget(self.elapsed_label)
+
+        self.transfer_progress = QProgressBar(self)
+        self.transfer_progress.setRange(0, 1)
+        self.transfer_progress.setValue(0)
+        self.transfer_progress.setFormat("Transfer: waiting")
+        self.transfer_progress.setStyleSheet("QProgressBar::chunk { background-color: #f59e0b; }")
+        self.transfer_progress.hide()
+        root.addWidget(self.transfer_progress)
+
         button_row = QHBoxLayout()
         button_row.addStretch(1)
-        btn_start = QPushButton("Start Capture", self)
-        btn_start.setStyleSheet(
+        self.btn_start = QPushButton("Start Capture", self)
+        self.btn_start.setStyleSheet(
             "QPushButton {background-color: #16a34a; color: white; font-weight: 700; "
             "padding: 6px 12px; border-radius: 8px;}"
             "QPushButton:hover {background-color: #15803d;}"
         )
-        btn_start.clicked.connect(self._accept_and_close)
-        button_row.addWidget(btn_start)
+        self.btn_start.clicked.connect(self._on_start_clicked)
+        button_row.addWidget(self.btn_start)
 
-        btn_close = QPushButton("Close", self)
-        btn_close.clicked.connect(self.reject)
-        button_row.addWidget(btn_close)
+        self.btn_close = QPushButton("Close", self)
+        self.btn_close.clicked.connect(self.reject)
+        button_row.addWidget(self.btn_close)
         root.addLayout(button_row)
 
     def _resolve_video_path(self, raw_path: str) -> str:
@@ -242,8 +267,42 @@ class CSICaptureGuidanceDialog(QDialog):
             player.setPosition(0)
             player.play()
 
-    def _accept_and_close(self) -> None:
+    def _on_start_clicked(self) -> None:
+        if self._capture_started:
+            return
+        self._capture_started = True
         self._accepted = True
+        self.btn_start.setEnabled(False)
+        self.btn_close.setEnabled(False)
+        self.capture_progress.show()
+        self.elapsed_label.show()
+        self.transfer_progress.hide()
+        self.start_capture_requested.emit()
+
+    def update_capture_progress(self, elapsed: float, duration: float) -> None:
+        safe_duration = max(float(duration), 0.1)
+        percent = int(min(100, (max(0.0, elapsed) / safe_duration) * 100))
+        self.capture_progress.setValue(percent)
+        self.capture_progress.setFormat(f"Capture: {percent}%")
+        self.elapsed_label.setText(f"Elapsed: {max(0.0, elapsed):.1f}s")
+
+    def start_transfer_progress(self, total_files: int) -> None:
+        total = max(int(total_files), 1)
+        self.transfer_progress.setRange(0, total)
+        self.transfer_progress.setValue(0)
+        self.transfer_progress.setFormat(f"Transfer: 0/{total} PCAPs")
+        self.transfer_progress.show()
+
+    def update_transfer_progress(self, completed: int, total_files: int, status: str = "") -> None:
+        total = max(int(total_files), 1)
+        done = min(max(int(completed), 0), total)
+        self.transfer_progress.setRange(0, total)
+        self.transfer_progress.setValue(done)
+        suffix = f" - {status}" if status else ""
+        self.transfer_progress.setFormat(f"Transfer: {done}/{total} PCAPs{suffix}")
+
+    def finish_capture(self) -> None:
+        self.btn_close.setEnabled(True)
         self.accept()
 
     def closeEvent(self, event):  # pragma: no cover - UI lifecycle
@@ -258,6 +317,10 @@ class DemoWindow(QWidget):
     doppler_ready = pyqtSignal(object)
     dorf_ready = pyqtSignal(object)
     background_plot_failed = pyqtSignal(str)
+    capture_progress_updated = pyqtSignal(float, float)
+    transfer_progress_started = pyqtSignal(int)
+    transfer_progress_updated = pyqtSignal(int, int, str)
+    capture_ui_finished = pyqtSignal()
 
     def __init__(
         self,
@@ -278,8 +341,7 @@ class DemoWindow(QWidget):
         self.wifi_manager = WiFiCSIManager(self.wifi_profile)
         self._capture_thread = None
         self._capture_started_at = 0.0
-        self._capture_progress_dialog: QProgressDialog | None = None
-        self._capture_progress_timer: QTimer | None = None
+        self._capture_guidance_dialog: CSICaptureGuidanceDialog | None = None
         self._clock_timer: QTimer | None = None
         self._figure_maximize_buttons: dict[Figure, list[tuple[object, MatplotlibButton]]] = {}
         self._plot_detail_windows: list[QWidget] = []
@@ -291,6 +353,10 @@ class DemoWindow(QWidget):
         self.doppler_ready.connect(self._on_doppler_ready)
         self.dorf_ready.connect(self._on_dorf_ready)
         self.background_plot_failed.connect(self._on_background_plot_failed)
+        self.capture_progress_updated.connect(self._on_capture_progress_updated)
+        self.transfer_progress_started.connect(self._on_transfer_progress_started)
+        self.transfer_progress_updated.connect(self._on_transfer_progress_updated)
+        self.capture_ui_finished.connect(self._on_capture_ui_finished)
         self._build_ui()
 
     def _build_ui(self):
@@ -616,18 +682,9 @@ class DemoWindow(QWidget):
         if not self.routers_info:
             QMessageBox.warning(self, "No Routers", "No connected routers are available for demo capture.")
             return
-        if not self._show_capture_guidance_dialog():
-            return
+        self._show_capture_guidance_dialog()
 
-        self.btn_capture.setEnabled(False)
-        capture_duration = self._capture_duration()
-        self.status_label.setText("Capturing CSI... Please perform the target activity now.")
-        self._set_tab_processing_state(allow_primary_only=True)
-        self._start_capture_progress(capture_duration)
-        self._capture_thread = threading.Thread(target=self._run_capture_cycle, daemon=True)
-        self._capture_thread.start()
-
-    def _show_capture_guidance_dialog(self) -> bool:
+    def _show_capture_guidance_dialog(self) -> None:
         dlg = CSICaptureGuidanceDialog(
             parent=self,
             title=str(
@@ -656,47 +713,23 @@ class DemoWindow(QWidget):
                 self.demo_profile.get("capture_guidance_video_right_path", "")
             ).strip(),
         )
-        return dlg.exec_() == QDialog.Accepted
+        dlg.start_capture_requested.connect(self._begin_capture_cycle)
+        dlg.rejected.connect(self._on_capture_guidance_closed)
+        self._capture_guidance_dialog = dlg
+        dlg.show()
 
-    def _start_capture_progress(self, capture_duration: float) -> None:
+    def _begin_capture_cycle(self) -> None:
+        self.btn_capture.setEnabled(False)
+        self.status_label.setText("Capturing CSI... Please perform the target activity now.")
+        self._set_tab_processing_state(allow_primary_only=True)
+        capture_duration = self._capture_duration()
         self._capture_started_at = time.monotonic()
-        self._capture_progress_dialog = QProgressDialog(
-            "Capture in progress.\nPlease perform the target activity now.",
-            None,
-            0,
-            100,
-            self,
-        )
-        self._capture_progress_dialog.setWindowTitle("Demo CSI Capture")
-        self._capture_progress_dialog.setWindowModality(Qt.WindowModal)
-        self._capture_progress_dialog.setCancelButton(None)
-        self._capture_progress_dialog.setMinimumDuration(0)
-        self._capture_progress_dialog.setValue(0)
-        self._capture_progress_dialog.show()
+        self.capture_progress_updated.emit(0.0, capture_duration)
+        self._capture_thread = threading.Thread(target=self._run_capture_cycle, daemon=True)
+        self._capture_thread.start()
 
-        self._capture_progress_timer = QTimer(self)
-
-        def _update_progress() -> None:
-            if not self._capture_progress_dialog:
-                return
-            elapsed = max(0.0, time.monotonic() - self._capture_started_at)
-            percent = int(min(99, (elapsed / max(capture_duration, 0.1)) * 100))
-            self._capture_progress_dialog.setValue(percent)
-
-        self._capture_progress_timer.timeout.connect(_update_progress)
-        self._capture_progress_timer.start(100)
-        _update_progress()
-
-    def _stop_capture_progress(self) -> None:
-        if self._capture_progress_timer is not None:
-            self._capture_progress_timer.stop()
-            self._capture_progress_timer.deleteLater()
-            self._capture_progress_timer = None
-        if self._capture_progress_dialog is not None:
-            self._capture_progress_dialog.setValue(100)
-            self._capture_progress_dialog.close()
-            self._capture_progress_dialog.deleteLater()
-            self._capture_progress_dialog = None
+    def _on_capture_guidance_closed(self) -> None:
+        self._capture_guidance_dialog = None
 
     def _run_capture_cycle(self):
         try:
@@ -755,9 +788,20 @@ class DemoWindow(QWidget):
                 thread.start()
                 capture_threads.append(thread)
 
-            for thread in capture_threads:
-                thread.join()
+            while any(thread.is_alive() for thread in capture_threads):
+                elapsed = max(0.0, time.monotonic() - self._capture_started_at)
+                self.capture_progress_updated.emit(elapsed, capture_duration)
+                time.sleep(0.1)
+            self.capture_progress_updated.emit(capture_duration, capture_duration)
 
+            sniffers = [
+                entry
+                for entry in ordered_routers
+                if self.wifi_manager.is_sniffer((dict(entry.get("run_info") or {})).get("ap", {}))
+            ]
+            total_sniffers = len(sniffers)
+            self.transfer_progress_started.emit(total_sniffers)
+            transfer_completed = 0
             for router_entry in ordered_routers:
                 run_info = dict(router_entry.get("run_info") or {})
                 ap = run_info.get("ap", {})
@@ -774,6 +818,10 @@ class DemoWindow(QWidget):
                 candidates = self.wifi_manager.filter_matching_pcaps(pcap_files, exp_name)
                 target_file = self.wifi_manager.latest_pcap_filename(candidates)
                 if not target_file:
+                    transfer_completed += 1
+                    self.transfer_progress_updated.emit(
+                        transfer_completed, total_sniffers, f"{ap_name}: no matching file"
+                    )
                     continue
 
                 capture_dir = self.results_dir / "demo_csi_captures" / self.wifi_manager.sanitize_ap_name(ap_name)
@@ -785,6 +833,10 @@ class DemoWindow(QWidget):
                     use_ftp=str(ap.get("download_mode", "SFTP")).strip().upper() != "SFTP",
                 )
                 downloaded.append((local_path, int(ap.get("bandwidth", "80").replace("MHz", "") or "80")))
+                transfer_completed += 1
+                self.transfer_progress_updated.emit(
+                    transfer_completed, total_sniffers, f"{ap_name}: downloaded {target_file}"
+                )
 
             if not downloaded:
                 error_suffix = f" Errors: {'; '.join(capture_errors)}" if capture_errors else ""
@@ -806,6 +858,8 @@ class DemoWindow(QWidget):
             self.capture_finished.emit(True, f"Capture complete: {first_capture.name}")
         except Exception as exc:  # pragma: no cover - network/runtime behavior
             self.capture_finished.emit(False, f"Demo capture failed: {exc}")
+        finally:
+            self.capture_ui_finished.emit()
 
     @staticmethod
     def _has_payload_packets(pcap_path: Path) -> bool:
@@ -1345,11 +1399,27 @@ class DemoWindow(QWidget):
             target_ax.legend(loc=legend._loc if hasattr(legend, "_loc") else "best")
 
     def _on_capture_finished(self, success: bool, message: str):
-        self._stop_capture_progress()
         self.btn_capture.setEnabled(True)
         self.status_label.setText(message)
         if not success:
             QMessageBox.warning(self, "Demo Capture", message)
+
+    def _on_capture_progress_updated(self, elapsed: float, duration: float) -> None:
+        if self._capture_guidance_dialog is not None:
+            self._capture_guidance_dialog.update_capture_progress(elapsed, duration)
+
+    def _on_transfer_progress_started(self, total_files: int) -> None:
+        if self._capture_guidance_dialog is not None:
+            self._capture_guidance_dialog.start_transfer_progress(total_files)
+
+    def _on_transfer_progress_updated(self, completed: int, total_files: int, status: str) -> None:
+        if self._capture_guidance_dialog is not None:
+            self._capture_guidance_dialog.update_transfer_progress(completed, total_files, status)
+
+    def _on_capture_ui_finished(self) -> None:
+        if self._capture_guidance_dialog is not None:
+            self._capture_guidance_dialog.finish_capture()
+            self._capture_guidance_dialog = None
 
     def closeEvent(self, event):
         if self._clock_timer is not None:
