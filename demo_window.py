@@ -618,6 +618,13 @@ class DemoWindow(QWidget):
     def _capture_duration(self) -> float:
         return max(float(self.demo_profile.get("capture_duration_seconds", 5.0)), 1.0)
 
+    def _root_music_thread_count(self) -> int:
+        try:
+            requested = int(self.demo_profile.get("root_music_threads", 1))
+        except (TypeError, ValueError):
+            requested = 1
+        return max(1, requested)
+
     def _subplot_setting(self, category: str) -> dict:
         settings = dict(DEFAULT_SUBPLOT_SETTINGS.get(category, {}))
         profile_settings = self.demo_profile.get("subplot_settings", {})
@@ -933,7 +940,11 @@ class DemoWindow(QWidget):
     ) -> None:
         try:
             doppler_payload = self.plot_calculator.compute_doppler_payload(
-                csi_data, time_vals, packet_count, tx_pairs
+                csi_data,
+                time_vals,
+                packet_count,
+                tx_pairs,
+                num_threads=self._root_music_thread_count(),
             )
             self.doppler_ready.emit(doppler_payload)
             dorf_payload = self.plot_calculator.compute_dorf_payload(

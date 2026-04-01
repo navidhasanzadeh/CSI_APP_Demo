@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+from concurrent.futures import ThreadPoolExecutor
 from itertools import combinations
 import sys
 from pathlib import Path
@@ -99,7 +101,7 @@ class DemoPlotCalculator:
         }
 
     @staticmethod
-    def root_music_csi_like(sample_data: np.ndarray, L: int = 1) -> np.ndarray:
+    def root_music_csi_like(sample_data: np.ndarray, L: int = 1, num_threads: int = 1) -> np.ndarray:
         if sample_data.ndim != 2 or sample_data.shape[1] < 32:
             return np.array([], dtype=float)
         n_sc, n_t = sample_data.shape
@@ -108,15 +110,28 @@ class DemoPlotCalculator:
         sig_padded[:, :50] = sample_data[:, 50:0:-1]
         sig_padded[:, -50:] = sample_data[:, -1:-51:-1]
 
-        doppler_vector = []
-        for w in range(50, n_t + 50):
+        windows = list(range(50, n_t + 50))
+
+        def _estimate_window(w: int) -> np.ndarray:
             sig_window = sig_padded[:, w - 16 : w + 16]
             h = sig_window.T
             covariance = h @ h.conj().T
             covariance = np.nan_to_num(covariance)
             estimator = estimation.RootMUSIC1D(1.0)
             _, estimates = estimator.estimate(covariance, L)
-            doppler_vector.append(estimates.locations)
+            return np.asarray(estimates.locations, dtype=float)
+
+        max_threads = max(1, os.cpu_count() or 1)
+        try:
+            requested_threads = int(num_threads)
+        except (TypeError, ValueError):
+            requested_threads = 1
+        worker_count = max(1, min(requested_threads, max_threads))
+        if worker_count == 1:
+            doppler_vector = [_estimate_window(w) for w in windows]
+        else:
+            with ThreadPoolExecutor(max_workers=worker_count) as executor:
+                doppler_vector = list(executor.map(_estimate_window, windows))
         return np.asarray(doppler_vector, dtype=float).reshape(-1)
 
     @staticmethod
@@ -156,7 +171,9 @@ class DemoPlotCalculator:
         return csi_ratio[:, good_subcarriers]
 
     @classmethod
-    def compute_doppler_payload(cls, csi_data: np.ndarray, time_vals: np.ndarray, packet_count: int, tx_pairs: list[tuple[int, int]]) -> dict:
+    def compute_doppler_payload(
+        cls, csi_data: np.ndarray, time_vals: np.ndarray, packet_count: int, tx_pairs: list[tuple[int, int]], num_threads: int = 1
+    ) -> dict:
         rx_count = csi_data.shape[2] if csi_data.ndim >= 3 else 1
         if time_vals.size == packet_count:
             x = np.asarray(time_vals, dtype=float)
@@ -170,7 +187,7 @@ class DemoPlotCalculator:
         for rx_idx in range(rx_count):
             for tx_pair in tx_pairs:
                 csi_ratio = cls.extract_csi_ratio_for_stream(csi_data, rx_idx, tx_pair)
-                music_output = cls.root_music_csi_like(csi_ratio.T) if csi_ratio.size else np.array([])
+                music_output = cls.root_music_csi_like(csi_ratio.T, num_threads=num_threads) if csi_ratio.size else np.array([])
                 music_output = np.asarray(music_output, dtype=float)
                 dopplers.append(music_output)
                 series.append({"rx_idx": rx_idx, "tx_pair": tx_pair, "music_output": music_output, "x": x[: music_output.size], "x_label": x_label})

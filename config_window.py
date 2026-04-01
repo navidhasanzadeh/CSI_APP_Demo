@@ -3,6 +3,7 @@ import csv
 import datetime
 import hashlib
 import json
+import os
 import random
 import re
 import requests
@@ -391,6 +392,7 @@ DEFAULT_TIME_PROFILE = {
 DEFAULT_DEMO_PROFILE = {
     "capture_duration_seconds": 5.0,
     "apply_hampel_to_ratio_phase": False,
+    "root_music_threads": 1,
     "demo_title_text": "Doppler Radiance Fields (DoRF) for Robust Wi-Fi Sensing and Human Activity Recognition",
     "qr_code_image_path": "",
     "qr_website_url": "https://dorf.navidhasanzadeh.com",
@@ -911,6 +913,18 @@ def _load_demo_profiles_from_csv():
                         profile["apply_hampel_to_ratio_phase"],
                     )
                 )
+                try:
+                    profile["root_music_threads"] = max(
+                        1,
+                        int(
+                            row.get(
+                                "root_music_threads",
+                                profile["root_music_threads"],
+                            )
+                        ),
+                    )
+                except (TypeError, ValueError):
+                    pass
                 profile["demo_title_text"] = (
                     row.get("demo_title_text")
                     or profile["demo_title_text"]
@@ -1859,6 +1873,7 @@ def save_demo_profiles(profiles: dict):
                 "profile_name",
                 "capture_duration_seconds",
                 "apply_hampel_to_ratio_phase",
+                "root_music_threads",
                 "demo_title_text",
                 "qr_code_image_path",
                 "qr_website_url",
@@ -1893,6 +1908,15 @@ def save_demo_profiles(profiles: dict):
                                 "apply_hampel_to_ratio_phase",
                                 DEFAULT_DEMO_PROFILE["apply_hampel_to_ratio_phase"],
                             )
+                        ),
+                        "root_music_threads": max(
+                            1,
+                            int(
+                                profile.get(
+                                    "root_music_threads",
+                                    DEFAULT_DEMO_PROFILE["root_music_threads"],
+                                )
+                            ),
                         ),
                         "demo_title_text": (
                             str(
@@ -4280,6 +4304,13 @@ class ConfigDialog(QDialog):
             self.grp_demo,
         )
         form.addRow("", self.chk_demo_hampel_ratio_phase)
+        self.spn_demo_root_music_threads = QSpinBox(self.grp_demo)
+        max_threads = max(1, os.cpu_count() or 1)
+        self.spn_demo_root_music_threads.setRange(1, max_threads)
+        self.spn_demo_root_music_threads.setValue(
+            int(DEFAULT_DEMO_PROFILE["root_music_threads"])
+        )
+        form.addRow("Root-MUSIC worker threads:", self.spn_demo_root_music_threads)
 
         self.txt_demo_title = QLineEdit(self.grp_demo)
         self.txt_demo_title.setPlaceholderText(DEFAULT_DEMO_PROFILE["demo_title_text"])
@@ -6476,6 +6507,17 @@ class ConfigDialog(QDialog):
                     )
                 )
             )
+        if hasattr(self, "spn_demo_root_music_threads"):
+            try:
+                threads_value = int(
+                    profile.get(
+                        "root_music_threads",
+                        DEFAULT_DEMO_PROFILE["root_music_threads"],
+                    )
+                )
+            except (TypeError, ValueError):
+                threads_value = int(DEFAULT_DEMO_PROFILE["root_music_threads"])
+            self.spn_demo_root_music_threads.setValue(max(1, threads_value))
         if hasattr(self, "txt_demo_title"):
             self.txt_demo_title.setText(
                 str(
@@ -7567,6 +7609,10 @@ class ConfigDialog(QDialog):
         if hasattr(self, "chk_demo_hampel_ratio_phase"):
             profile["apply_hampel_to_ratio_phase"] = bool(
                 self.chk_demo_hampel_ratio_phase.isChecked()
+            )
+        if hasattr(self, "spn_demo_root_music_threads"):
+            profile["root_music_threads"] = max(
+                1, int(self.spn_demo_root_music_threads.value())
             )
         if hasattr(self, "txt_demo_title"):
             profile["demo_title_text"] = (
