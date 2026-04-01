@@ -240,19 +240,6 @@ class DemoWindow(QWidget):
         )
 
         self.demo_tabs = QTabWidget(self)
-        self.demo_tabs.setStyleSheet(
-            "QTabWidget::pane { border: 1px solid #cfd8e3; border-radius: 8px; background: #ffffff; }"
-            "QTabBar::tab { padding: 6px 10px; font-size: 12px; font-weight: 700; margin-right: 2px; border-top-left-radius: 8px; border-top-right-radius: 8px; }"
-            "QTabBar::tab:selected { color: white; }"
-            "QTabBar::tab:!selected { color: #111827; }"
-            "QTabBar::tab:nth-child(1) { background: #93c5fd; }"
-            "QTabBar::tab:nth-child(1):selected { background: #2563eb; }"
-            "QTabBar::tab:nth-child(2) { background: #86efac; }"
-            "QTabBar::tab:nth-child(2):selected { background: #16a34a; }"
-            "QTabBar::tab:nth-child(3) { background: #fca5a5; }"
-            "QTabBar::tab:nth-child(3):selected { background: #dc2626; }"
-            "QTabBar::tab:disabled { background: #e5e7eb; color: #9ca3af; }"
-        )
         csi_tab = QWidget(self.demo_tabs)
         csi_layout = QVBoxLayout(csi_tab)
         self.chk_hampel_ratio_phase = QCheckBox(
