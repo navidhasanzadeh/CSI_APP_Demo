@@ -8,11 +8,13 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from itertools import combinations
+from math import ceil
 
 import numpy as np
 import scipy.linalg as LA
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from matplotlib import cm
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
@@ -708,8 +710,10 @@ class DemoWindow(QWidget):
             x = np.arange(packet_count)
             x_label = "Packet index"
 
-        grid = self.doppler_figure.add_gridspec(total_pairs, 1, hspace=0.9)
-        fig_height = max(8, total_pairs * 1.9)
+        ncols = 2
+        nrows = int(ceil(total_pairs / ncols))
+        grid = self.doppler_figure.add_gridspec(nrows, ncols, hspace=0.6, wspace=0.25)
+        fig_height = max(8, nrows * 2.4)
         self.doppler_figure.set_size_inches(11, fig_height)
         self.doppler_canvas.setMinimumHeight(int(fig_height * self.doppler_figure.get_dpi()))
         dopplers: list[np.ndarray] = []
@@ -720,7 +724,7 @@ class DemoWindow(QWidget):
             csi_ratio = self._extract_csi_ratio_for_stream(csi_data, rx_idx, tx_pair)
             music_output = self._root_music_csi_like(csi_ratio.T) if csi_ratio.size else np.array([])
             dopplers.append(np.asarray(music_output, dtype=float))
-            ax = self.doppler_figure.add_subplot(grid[row_idx, 0])
+            ax = self.doppler_figure.add_subplot(grid[row_idx // ncols, row_idx % ncols])
             if music_output.size:
                 x_trim = x[: music_output.size]
                 ax.plot(x_trim, music_output, color="tab:purple", linewidth=0.9)
@@ -737,8 +741,11 @@ class DemoWindow(QWidget):
             ax.set_ylabel("Norm. Doppler")
             ax.set_title(f"RX {rx_idx + 1}: TX {tx_pair[0] + 1}/TX {tx_pair[1] + 1} MUSIC")
             ax.grid(True)
-            if row_idx == total_pairs - 1:
+            if row_idx >= total_pairs - ncols:
                 ax.set_xlabel(x_label)
+        if total_pairs % ncols:
+            spare_ax = self.doppler_figure.add_subplot(grid[-1, -1])
+            spare_ax.set_axis_off()
         self.doppler_figure.subplots_adjust(left=0.08, right=0.95, top=0.96, bottom=0.08)
         self.doppler_canvas.draw_idle()
         self._plot_dorf_from_dopplers(dopplers)
@@ -780,7 +787,7 @@ class DemoWindow(QWidget):
             doppler_matrix[:, i] = doppler_matrix[:, i] - np.mean(doppler_matrix[:, i])
 
         t = np.arange(doppler_matrix.shape[0])
-        best_v, _, best_mask, best_loss, loss_hist, proj_images, _ = estimate_velocity_from_radial_old_dtw(
+        best_v, best_r, best_mask, best_loss, loss_hist, proj_images, _, dorf_meta = estimate_velocity_from_radial_old_dtw(
             doppler_matrix[:, :],
             subset_fraction=1.0,
             outer_iterations=10,
@@ -793,17 +800,33 @@ class DemoWindow(QWidget):
             visualise=self.chk_dorf_visualize.isChecked(),
             grid_res=6,
             max_clusters=2,
+            return_metadata=True,
         )
 
-        grid = self.dorf_figure.add_gridspec(3, 1, hspace=0.55)
-        ax_loss = self.dorf_figure.add_subplot(grid[0, 0])
+        cluster_stats = dorf_meta.get("cluster_stats", [])
+        kept_ids = dorf_meta.get("kept_ids", np.where(best_mask)[0])
+        kept_dirs = dorf_meta.get("kept_dirs", best_r[kept_ids] if kept_ids.size else np.empty((0, 3)))
+        labels = dorf_meta.get("labels", np.zeros(kept_dirs.shape[0], dtype=int))
+
+        panel_count = 4 + len(cluster_stats) + 1
+        ncols = 2
+        nrows = int(ceil(panel_count / ncols))
+        grid = self.dorf_figure.add_gridspec(nrows, ncols, hspace=0.6, wspace=0.28)
+        fig_height = max(10, nrows * 2.7)
+        self.dorf_figure.set_size_inches(12, fig_height)
+        self.dorf_canvas.setMinimumHeight(int(fig_height * self.dorf_figure.get_dpi()))
+
+        panel_idx = 0
+        ax_loss = self.dorf_figure.add_subplot(grid[panel_idx // ncols, panel_idx % ncols])
+        panel_idx += 1
         ax_loss.plot(loss_hist, marker="o", color="tab:blue", linewidth=1.0)
         ax_loss.set_title(f"DoRF DTW loss (best={best_loss:.4f})")
         ax_loss.set_ylabel("Loss")
         ax_loss.set_xlabel("Iteration")
         ax_loss.grid(True)
 
-        ax_vel = self.dorf_figure.add_subplot(grid[1, 0])
+        ax_vel = self.dorf_figure.add_subplot(grid[panel_idx // ncols, panel_idx % ncols])
+        panel_idx += 1
         for dim, label in enumerate(("v_x", "v_y", "v_z")):
             ax_vel.plot(best_v[:, dim], label=label, linewidth=0.95)
         ax_vel.set_title("Estimated velocity components")
@@ -812,7 +835,17 @@ class DemoWindow(QWidget):
         ax_vel.legend(loc="upper right")
         ax_vel.grid(True)
 
-        ax_proj = self.dorf_figure.add_subplot(grid[2, 0])
+        ax_energy = self.dorf_figure.add_subplot(grid[panel_idx // ncols, panel_idx % ncols])
+        panel_idx += 1
+        ax_energy.plot((best_v ** 2).sum(axis=1), label="‖v_est‖²", color="tab:green", linewidth=1.0)
+        ax_energy.set_title("Energy envelope")
+        ax_energy.set_xlabel("Time index")
+        ax_energy.set_ylabel("Energy")
+        ax_energy.legend(loc="upper right")
+        ax_energy.grid(True)
+
+        ax_proj = self.dorf_figure.add_subplot(grid[panel_idx // ncols, panel_idx % ncols])
+        panel_idx += 1
         projection_map = proj_images.mean(axis=0)
         im = ax_proj.imshow(projection_map, cmap="seismic", aspect="auto", origin="upper")
         kept = int(np.sum(best_mask)) if best_mask is not None else 0
@@ -820,6 +853,53 @@ class DemoWindow(QWidget):
         ax_proj.set_xlabel("Longitude bins")
         ax_proj.set_ylabel("Latitude bins")
         self.dorf_figure.colorbar(im, ax=ax_proj, orientation="vertical", fraction=0.045, pad=0.02)
+
+        for cid, _, _, ap, perc, idxs in cluster_stats:
+            ax_cluster = self.dorf_figure.add_subplot(grid[panel_idx // ncols, panel_idx % ncols])
+            panel_idx += 1
+            obs = doppler_matrix[:, kept_ids[idxs]].mean(axis=1)
+            pred = (best_v @ best_r[kept_ids[idxs]].T).mean(axis=1)
+            ax_cluster.plot(obs, label="obs", linewidth=1.0)
+            ax_cluster.plot(pred, label="pred", linewidth=1.0)
+            ax_cluster.set_title(f"Cluster {cid} (dom Ant{ap}, {perc:.0f}%)")
+            ax_cluster.set_xlabel("Time index")
+            ax_cluster.grid(True)
+            ax_cluster.legend(loc="upper right")
+
+        ax_sphere = self.dorf_figure.add_subplot(
+            grid[panel_idx // ncols, panel_idx % ncols], projection="3d"
+        )
+        panel_idx += 1
+        u, vang = np.mgrid[0 : 2 * np.pi : 60j, 0 : np.pi : 30j]
+        ax_sphere.plot_surface(
+            np.cos(u) * np.sin(vang),
+            np.sin(u) * np.sin(vang),
+            np.cos(vang),
+            alpha=0.1,
+            color="gray",
+            linewidth=0,
+        )
+        if kept_dirs.size:
+            ax_sphere.scatter(
+                kept_dirs[:, 0],
+                kept_dirs[:, 1],
+                kept_dirs[:, 2],
+                c=cm.tab10(labels % 10),
+                s=30,
+            )
+            kappa_max = max(stat[2] for stat in cluster_stats) + 1e-9 if cluster_stats else 1.0
+            for cid, mu, kappa, ap, perc, _ in cluster_stats:
+                ax_sphere.quiver(0, 0, 0, *mu, length=1, color="k", linewidth=2 + 4 * kappa / kappa_max)
+                ax_sphere.text(*(1.08 * mu), f"κ={kappa:.1f}\nAnt{ap} {perc:.0f}%", ha="center")
+        ax_sphere.set_title("vMF clusters")
+        ax_sphere.set_xlim([-1.2, 1.2])
+        ax_sphere.set_ylim([-1.2, 1.2])
+        ax_sphere.set_zlim([-1.2, 1.2])
+
+        while panel_idx < nrows * ncols:
+            empty_ax = self.dorf_figure.add_subplot(grid[panel_idx // ncols, panel_idx % ncols])
+            empty_ax.set_axis_off()
+            panel_idx += 1
 
         self.dorf_figure.subplots_adjust(left=0.08, right=0.95, top=0.95, bottom=0.07)
         self.dorf_canvas.draw_idle()
