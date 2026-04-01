@@ -19,6 +19,7 @@ from matplotlib.backends.backend_qt5agg import (
 from matplotlib.figure import Figure
 from matplotlib import cm
 from matplotlib.widgets import Button as MatplotlibButton
+from mpl_toolkits.mplot3d import proj3d
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
@@ -906,6 +907,7 @@ class DemoWindow(QWidget):
         ax_sphere._vmf_plot_payload = {
             "kept_dirs": np.asarray(kept_dirs),
             "cluster_stats": list(cluster_stats),
+            "doppler_vectors": np.asarray(doppler_matrix[:, kept_ids]).T if kept_ids.size else np.empty((0, 0)),
         }
 
         while panel_idx < nrows * ncols:
@@ -961,8 +963,28 @@ class DemoWindow(QWidget):
         layout.addWidget(toolbar)
         layout.addWidget(detail_canvas, stretch=1)
 
-        detail_ax = detail_figure.add_subplot(111, projection=source_ax.name)
-        self._copy_axis_contents(source_ax, detail_ax)
+        vmf_payload = getattr(source_ax, "_vmf_plot_payload", None)
+        if vmf_payload is not None and source_ax.name == "3d":
+            left_ax = detail_figure.add_subplot(121, projection="3d")
+            self._copy_axis_contents(source_ax, left_ax)
+            right_ax = detail_figure.add_subplot(122)
+            right_ax.set_title("Doppler projection vector")
+            right_ax.set_xlabel("Time index")
+            right_ax.set_ylabel("Amplitude")
+            right_ax.grid(True)
+            right_ax.text(
+                0.5,
+                0.5,
+                "Click a point on the sphere",
+                transform=right_ax.transAxes,
+                ha="center",
+                va="center",
+                color="gray",
+            )
+            self._connect_vmf_detail_click(detail_figure, detail_canvas, left_ax, right_ax, vmf_payload)
+        else:
+            detail_ax = detail_figure.add_subplot(111, projection=source_ax.name)
+            self._copy_axis_contents(source_ax, detail_ax)
         detail_figure.tight_layout()
         detail_canvas.draw_idle()
 
@@ -973,6 +995,41 @@ class DemoWindow(QWidget):
     def _cleanup_detail_window(self, window: QWidget) -> None:
         if window in self._plot_detail_windows:
             self._plot_detail_windows.remove(window)
+
+    @staticmethod
+    def _connect_vmf_detail_click(detail_figure, detail_canvas, sphere_ax, vector_ax, vmf_payload) -> None:
+        kept_dirs = np.asarray(vmf_payload.get("kept_dirs", np.empty((0, 3))), dtype=float)
+        doppler_vectors = np.asarray(vmf_payload.get("doppler_vectors", np.empty((0, 0))), dtype=float)
+        if kept_dirs.size == 0 or doppler_vectors.size == 0:
+            return
+
+        def _on_click(event):
+            if event.inaxes != sphere_ax:
+                return
+            x2d, y2d, _ = proj3d.proj_transform(
+                kept_dirs[:, 0], kept_dirs[:, 1], kept_dirs[:, 2], sphere_ax.get_proj()
+            )
+            projected_xy = sphere_ax.transData.transform(np.column_stack([x2d, y2d]))
+            click_xy = np.array([event.x, event.y], dtype=float)
+            distances = np.linalg.norm(projected_xy - click_xy, axis=1)
+            nearest_idx = int(np.argmin(distances))
+            if distances[nearest_idx] > 18.0:
+                return
+
+            vector_ax.clear()
+            vector_ax.plot(doppler_vectors[nearest_idx], color="tab:purple", linewidth=1.2)
+            direction = kept_dirs[nearest_idx]
+            vector_ax.set_title(
+                "Doppler projection vector\n"
+                f"dir=({direction[0]:.2f}, {direction[1]:.2f}, {direction[2]:.2f})"
+            )
+            vector_ax.set_xlabel("Time index")
+            vector_ax.set_ylabel("Amplitude")
+            vector_ax.grid(True)
+            detail_figure.tight_layout()
+            detail_canvas.draw_idle()
+
+        detail_canvas.mpl_connect("button_press_event", _on_click)
 
     @staticmethod
     def _copy_axis_contents(source_ax, target_ax) -> None:
