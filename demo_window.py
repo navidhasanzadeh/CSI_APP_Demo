@@ -929,18 +929,16 @@ class DemoWindow(QWidget):
             if not ax.get_visible() or ax.get_label() == "<colorbar>":
                 continue
             bbox = ax.get_position()
-            btn_w = 0.022
-            btn_h = 0.022
-            x0 = min(max(bbox.x1 - btn_w, 0.002), 0.998 - btn_w)
-            y0 = min(max(bbox.y1 + 0.004, 0.002), 0.998 - btn_h)
-            if y0 + btn_h > 0.998:
-                y0 = 0.998 - btn_h
-            if x0 + btn_w > 0.998:
-                x0 = 0.998 - btn_w
+            btn_size = 0.015
+            pad = 0.004
+            btn_w = btn_size
+            btn_h = btn_size
+            x0 = min(max(bbox.x1 - btn_w - pad, 0.002), 0.998 - btn_w)
+            y0 = min(max(bbox.y1 - btn_h - pad, 0.002), 0.998 - btn_h)
 
             button_ax = figure.add_axes([x0, y0, btn_w, btn_h])
             button = MatplotlibButton(button_ax, "⤢")
-            button.label.set_fontsize(10)
+            button.label.set_fontsize(8)
             button.on_clicked(lambda _evt, source_ax=ax: self._open_subplot_window(source_ax))
             button_refs.append((button_ax, button))
 
