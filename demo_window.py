@@ -996,17 +996,24 @@ class DemoWindow(QWidget):
             )
 
         for text in source_ax.texts:
-            transform = target_ax.transAxes if text.get_transform() == source_ax.transAxes else target_ax.transData
-            target_ax.text(
-                text.get_position()[0],
-                text.get_position()[1],
-                text.get_text(),
-                transform=transform,
-                ha=text.get_ha(),
-                va=text.get_va(),
-                fontsize=text.get_fontsize(),
-                color=text.get_color(),
-            )
+            common_kwargs = {
+                "ha": text.get_ha(),
+                "va": text.get_va(),
+                "fontsize": text.get_fontsize(),
+                "color": text.get_color(),
+            }
+            if hasattr(source_ax, "get_zlim") and hasattr(target_ax, "set_zlim") and hasattr(text, "get_position_3d"):
+                x, y, z = text.get_position_3d()
+                target_ax.text(x, y, z, text.get_text(), **common_kwargs)
+            else:
+                transform = target_ax.transAxes if text.get_transform() == source_ax.transAxes else target_ax.transData
+                target_ax.text(
+                    text.get_position()[0],
+                    text.get_position()[1],
+                    text.get_text(),
+                    transform=transform,
+                    **common_kwargs,
+                )
 
         target_ax.set_title(source_ax.get_title())
         target_ax.set_xlabel(source_ax.get_xlabel())
