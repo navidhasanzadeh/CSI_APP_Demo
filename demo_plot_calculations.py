@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from itertools import combinations
+import pickle
 import sys
 from pathlib import Path
 
@@ -20,6 +21,43 @@ from pcap_reader_ui import _read_ubilocate_csi
 
 class DemoPlotCalculator:
     """Calculate CSI, Doppler, DoRF, and HAR payloads for the demo window."""
+
+    _har_model = None
+    _har_model_error: str | None = None
+
+    @classmethod
+    def _load_har_model(cls):
+        if cls._har_model is not None:
+            return cls._har_model
+        if cls._har_model_error is not None:
+            return None
+
+        models_dir = Path(__file__).resolve().parent / "models"
+        model_path = models_dir / "original_rocket_baseline.pkl"
+        try:
+            if str(models_dir) not in sys.path:
+                sys.path.append(str(models_dir))
+            # Ensure OriginalRocketClassifier class is importable for pickle.
+            import originalrocket  # noqa: F401
+
+            with model_path.open("rb") as f:
+                cls._har_model = pickle.load(f)
+            return cls._har_model
+        except Exception as exc:
+            cls._har_model_error = str(exc)
+            return None
+
+    @staticmethod
+    def _prepare_har_input(proj_images: np.ndarray) -> np.ndarray:
+        if proj_images.ndim == 2:
+            proj_images = proj_images[np.newaxis, ...]
+        if proj_images.ndim != 3:
+            raise ValueError(f"Expected proj_images with 3 dimensions, got shape {proj_images.shape}.")
+
+        # proj_images shape: [time, lat_bins, lon_bins] -> [samples, channels, time]
+        t_len, lat_bins, lon_bins = proj_images.shape
+        channels = lat_bins * lon_bins
+        return proj_images.transpose(1, 2, 0).reshape(1, channels, t_len).astype(np.float32)
 
     @staticmethod
     def has_payload_packets(pcap_path) -> bool:
@@ -210,15 +248,54 @@ class DemoPlotCalculator:
         if dorf_payload.get("status") != "ok":
             return {"status": "insufficient", "label": "Unknown", "scores": {"Unknown": 1.0}}
 
-        best_v = np.asarray(dorf_payload.get("best_v"), dtype=float)
-        energy = (best_v ** 2).sum(axis=1)
-        mean_energy = float(np.mean(energy)) if energy.size else 0.0
-        var_energy = float(np.var(energy)) if energy.size else 0.0
+        proj_images = np.asarray(dorf_payload.get("proj_images"), dtype=float)
+        model = DemoPlotCalculator._load_har_model()
+        if model is None:
+            return {
+                "status": "error",
+                "label": "Unknown",
+                "label_value": -1,
+                "scores": {"Unknown": 1.0},
+                "message": f"HAR model load failed: {DemoPlotCalculator._har_model_error}",
+            }
 
-        scores = {
-            "Stationary": max(0.0, 1.0 - min(1.0, mean_energy / 0.25)),
-            "Periodic Motion": min(1.0, (var_energy + mean_energy) / 0.6),
-            "Transition Motion": min(1.0, (mean_energy * 0.7 + var_energy * 0.3) / 0.9),
-        }
-        label = max(scores, key=scores.get)
-        return {"status": "ok", "label": label, "scores": scores, "mean_energy": mean_energy, "var_energy": var_energy}
+        try:
+            har_input = DemoPlotCalculator._prepare_har_input(proj_images)
+            pred_value = int(model.predict(har_input)[0])
+
+            if hasattr(model, "predict_label_names"):
+                pred_label = str(model.predict_label_names(har_input)[0])
+            else:
+                pred_label = str(pred_value)
+
+            scores: dict[str, float] = {pred_label: 1.0}
+            clf = getattr(model, "clf_", None)
+            if clf is not None and hasattr(clf, "decision_function"):
+                raw = np.asarray(clf.decision_function(model.transformer_.transform(har_input)), dtype=float).reshape(-1)
+                probs = np.exp(raw - np.max(raw))
+                probs = probs / (np.sum(probs) + 1e-12)
+                class_names = getattr(model, "class_names_", None)
+                classes = np.asarray(getattr(clf, "classes_", np.arange(probs.size))).reshape(-1)
+                scores = {}
+                for i, p in enumerate(probs):
+                    class_id = int(classes[i]) if i < classes.size else i
+                    if class_names is not None and class_id < len(class_names):
+                        name = str(class_names[class_id])
+                    else:
+                        name = str(class_id)
+                    scores[name] = float(p)
+
+            return {
+                "status": "ok",
+                "label": pred_label,
+                "label_value": pred_value,
+                "scores": scores,
+            }
+        except Exception as exc:
+            return {
+                "status": "error",
+                "label": "Unknown",
+                "label_value": -1,
+                "scores": {"Unknown": 1.0},
+                "message": f"HAR inference failed: {exc}",
+            }
