@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import threading
 import time
-import sys
 from datetime import datetime
 from pathlib import Path
-from itertools import combinations
 from math import ceil
 
 import numpy as np
@@ -38,15 +36,10 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, QTimer
 
-from pcap_reader import ProcessPcap
-from pcap_reader_ui import _read_ubilocate_csi
 from wifi_csi_manager import WiFiCSIManager
+from demo_plot_calculations import DemoPlotCalculator
+from demo_plot_renderers import DemoPlotRenderer
 
-DORF_PATH = Path(__file__).resolve().parent / "DoRF"
-if str(DORF_PATH) not in sys.path:
-    sys.path.append(str(DORF_PATH))
-import doatools.estimation as estimation
-from nerfs2 import estimate_velocity_from_radial_old_dtw
 
 try:  # pragma: no cover - optional dependency at runtime
     from hampel import hampel
@@ -160,6 +153,8 @@ class DemoWindow(QWidget):
         self._clock_timer: QTimer | None = None
         self._figure_maximize_buttons: dict[Figure, list[tuple[object, MatplotlibButton]]] = {}
         self._plot_detail_windows: list[QWidget] = []
+        self.plot_calculator = DemoPlotCalculator()
+        self.plot_renderer = DemoPlotRenderer(self)
 
         self.capture_finished.connect(self._on_capture_finished)
         self.plot_requested.connect(self._on_plot_requested)
@@ -284,6 +279,20 @@ class DemoWindow(QWidget):
         dorf_layout.addWidget(self.dorf_scroll, stretch=1)
         self.demo_tabs.addTab(dorf_tab, "3. Doppler Radiance Fields (DoRF)")
 
+        har_tab = QWidget(self.demo_tabs)
+        har_layout = QVBoxLayout(har_tab)
+        self.har_figure = Figure(figsize=(10, 5), dpi=100)
+        self.har_canvas = FigureCanvas(self.har_figure)
+        self.har_canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.har_scroll = QScrollArea(har_tab)
+        self.har_scroll.setWidgetResizable(True)
+        self.har_scroll.setWidget(self.har_canvas)
+        self.har_scroll.setStyleSheet(
+            "QScrollArea {border: 1px solid #cfd8e3; border-radius: 10px; background: #ffffff;}"
+        )
+        har_layout.addWidget(self.har_scroll, stretch=1)
+        self.demo_tabs.addTab(har_tab, "4. Human Activity Recognition")
+
         content_row = QHBoxLayout()
         content_row.addWidget(self.demo_tabs, stretch=4)
 
@@ -350,6 +359,7 @@ class DemoWindow(QWidget):
         tab_bar.setTabEnabled(0, True)
         tab_bar.setTabEnabled(1, not allow_primary_only)
         tab_bar.setTabEnabled(2, not allow_primary_only)
+        tab_bar.setTabEnabled(3, not allow_primary_only)
 
     def _mark_tab_ready(self, tab_idx: int) -> None:
         self.demo_tabs.tabBar().setTabEnabled(tab_idx, True)
@@ -636,11 +646,7 @@ class DemoWindow(QWidget):
 
     @staticmethod
     def _has_payload_packets(pcap_path: Path) -> bool:
-        try:
-            # 24 bytes is a global pcap header-only file with zero packets.
-            return pcap_path.exists() and pcap_path.stat().st_size > 24
-        except Exception:
-            return False
+        return DemoPlotCalculator.has_payload_packets(pcap_path)
 
     def _apply_hampel_filter(self, values: np.ndarray) -> np.ndarray:
         if hampel is None:
@@ -667,27 +673,7 @@ class DemoWindow(QWidget):
             self.packet_count_label.setText("0")
             self.sampling_rate_label.setText("0.00 pkt/s")
             return
-        csi_data: np.ndarray | None = None
-        time_pkts: np.ndarray | None = None
-        nfft = int(3.2 * bandwidth_mhz)
-
-        try:
-            # Match PCAP reader behavior for demo plotting by using the
-            # UbiLocate parser first.
-            csi_data, time_pkts, _ = _read_ubilocate_csi(
-                str(pcap_path), bw=bandwidth_mhz, is_4ss=True
-            )
-            if csi_data.size == 0:
-                raise ValueError("No UbiLocate CSI packets found")
-        except Exception:
-            # Fallback to Nexmon processing so existing captures continue to
-            # render even if they are not in UbiLocate format.
-            processor = ProcessPcap(str(pcap_path.parent), bw=bandwidth_mhz, tx_loc=[0, 0])
-            csi_data_raw, time_raw, _, _ = processor.process_pcap(str(pcap_path), bw=bandwidth_mhz)
-            rx_count = getattr(processor, "num_cores", 1) or 1
-            nfft = processor.nfft
-            csi_data = csi_data_raw.reshape((-1, nfft, rx_count, 1))
-            time_pkts = np.asarray(time_raw)
+        csi_data, time_pkts, nfft = self.plot_calculator.load_csi_capture(pcap_path, bandwidth_mhz)
 
         if csi_data is None or time_pkts is None or csi_data.size == 0:
             self.status_label.setText(f"Unable to load CSI data from {pcap_path.name}.")
@@ -695,96 +681,24 @@ class DemoWindow(QWidget):
             self.sampling_rate_label.setText("0.00 pkt/s")
             return
 
-        time_vals = np.asarray(time_pkts, dtype=float)
-        packet_count = int(min(csi_data.shape[0], time_vals.size if time_vals.size else csi_data.shape[0]))
-        csi_data = csi_data[:packet_count]
-        time_vals = time_vals[:packet_count] if time_vals.size else np.array([])
+        ratio_payload = self.plot_calculator.compute_ratio_payload(
+            csi_data, np.asarray(time_pkts, dtype=float), nfft
+        )
+        packet_count = int(ratio_payload["packet_count"])
+        csi_data = ratio_payload["csi_data"]
+        time_vals = ratio_payload["time_vals"]
+        tx_pairs = ratio_payload["tx_pairs"]
         self.packet_count_label.setText(str(packet_count))
-
-        sampling_rate = 0.0
-        if packet_count > 1 and time_vals.size == packet_count:
-            duration = float(time_vals[-1] - time_vals[0])
-            if duration > 0:
-                sampling_rate = float((packet_count - 1) / duration)
-        self.sampling_rate_label.setText(f"{sampling_rate:.2f} pkt/s")
-
-        subcarrier_idx = min(23, nfft - 1)
-        rx_count = csi_data.shape[2] if csi_data.ndim >= 3 else 1
-        tx_count = csi_data.shape[3] if csi_data.ndim >= 4 else 1
-        tx_pairs = list(combinations(range(tx_count), 2))
+        self.sampling_rate_label.setText(f"{float(ratio_payload['sampling_rate']):.2f} pkt/s")
         if not tx_pairs:
             self.status_label.setText(
                 f"Unable to compute CSI ratio from {pcap_path.name}: at least 2 TX antennas are required."
             )
             return
 
-        total_pairs = rx_count * len(tx_pairs)
-        if time_vals.size == packet_count:
-            x = time_vals
-            x_label = "Time (s)"
-        else:
-            x = np.arange(packet_count)
-            x_label = "Packet index"
-
-        self.figure.clear()
-        grid = self.figure.add_gridspec(
-            total_pairs,
-            2,
-            width_ratios=[1, 1],
-            wspace=0.65,
-            hspace=1.05,
+        self.plot_renderer.plot_ratio(
+            ratio_payload, apply_hampel=self.chk_hampel_ratio_phase.isChecked()
         )
-        figure_height = max(8, total_pairs * 2.1)
-        self.figure.set_size_inches(12, figure_height)
-        self.canvas.setMinimumHeight(int(figure_height * self.figure.get_dpi()))
-
-        for row_idx, (rx_idx, (tx_num, tx_den)) in enumerate(
-            (rx_tx for rx_tx in ((r, pair) for r in range(rx_count) for pair in tx_pairs))
-        ):
-            numerator = csi_data[:, subcarrier_idx, rx_idx, tx_num]
-            denominator = csi_data[:, subcarrier_idx, rx_idx, tx_den]
-            ratio = numerator / (denominator + 1e-12)
-            ratio_mag = np.abs(ratio)
-            ratio_phase = np.angle(ratio)
-            if self.chk_hampel_ratio_phase.isChecked():
-                ratio_phase = self._apply_hampel_filter(ratio_phase)
-
-            ax_mag = self.figure.add_subplot(grid[row_idx, 0])
-            ax_phase = self.figure.add_subplot(grid[row_idx, 1], sharex=ax_mag)
-            mag_category = "csi_ratio_magnitude"
-            phase_category = "csi_ratio_phase"
-
-            if self._subplot_visible(mag_category):
-                ax_mag.plot(x, ratio_mag, color="tab:blue", linewidth=0.9)
-                ax_mag.margins(x=0.08, y=0.25)
-                self._apply_subplot_labels(
-                    ax_mag,
-                    category=mag_category,
-                    default_title=f"RX {rx_idx + 1}: TX {tx_num + 1}/TX {tx_den + 1} Magnitude",
-                    default_xlabel=x_label,
-                    default_ylabel="|Ratio|",
-                )
-                ax_mag.grid(True)
-            else:
-                ax_mag.set_axis_off()
-
-            if self._subplot_visible(phase_category):
-                ax_phase.plot(x, ratio_phase, color="tab:green", linewidth=0.9)
-                ax_phase.margins(x=0.08, y=0.25)
-                self._apply_subplot_labels(
-                    ax_phase,
-                    category=phase_category,
-                    default_title=f"RX {rx_idx + 1}: TX {tx_num + 1}/TX {tx_den + 1} Phase",
-                    default_xlabel=x_label,
-                    default_ylabel="Phase (rad)",
-                )
-                ax_phase.grid(True)
-            else:
-                ax_phase.set_axis_off()
-
-        self.figure.subplots_adjust(left=0.08, right=0.92, top=0.96, bottom=0.07)
-        self._install_subplot_maximize_buttons(self.figure, self.canvas)
-        self.canvas.draw_idle()
         self._set_tab_processing_state(allow_primary_only=True)
         self.status_label.setText("CSI magnitude/phase plotted. Processing Doppler and DoRF in background...")
         worker = threading.Thread(
@@ -801,115 +715,32 @@ class DemoWindow(QWidget):
         self, csi_data: np.ndarray, time_vals: np.ndarray, packet_count: int, tx_pairs: list[tuple[int, int]]
     ) -> None:
         try:
-            doppler_payload = self._compute_doppler_payload(csi_data, time_vals, packet_count, tx_pairs)
+            doppler_payload = self.plot_calculator.compute_doppler_payload(
+                csi_data, time_vals, packet_count, tx_pairs
+            )
             self.doppler_ready.emit(doppler_payload)
-            dorf_payload = self._compute_dorf_payload(doppler_payload["dopplers"])
+            dorf_payload = self.plot_calculator.compute_dorf_payload(
+                doppler_payload["dopplers"], dorf_visualize=self.chk_dorf_visualize.isChecked()
+            )
             self.dorf_ready.emit(dorf_payload)
         except Exception as exc:
             self.background_plot_failed.emit(str(exc))
 
     def _on_doppler_ready(self, payload: dict) -> None:
-        self._plot_doppler_from_payload(payload)
+        self.plot_renderer.plot_doppler(payload)
         self._mark_tab_ready(1)
         self.status_label.setText("Doppler tab ready. DoRF is still processing in background...")
 
     def _on_dorf_ready(self, payload: dict) -> None:
-        self._plot_dorf_from_payload(payload)
+        self.plot_renderer.plot_dorf(payload)
+        har_payload = self.plot_calculator.compute_har_payload(payload)
+        self.plot_renderer.plot_har(har_payload)
         self._mark_tab_ready(2)
+        self._mark_tab_ready(3)
         self.status_label.setText("All demo tabs are ready.")
 
     def _on_background_plot_failed(self, message: str) -> None:
         self.status_label.setText(f"Background plotting failed: {message}")
-
-    def _root_music_csi_like(
-        self, sample_data: np.ndarray, do_cov_processing: bool = False, L: int = 1
-    ) -> np.ndarray:
-        _ = do_cov_processing
-        if sample_data.ndim != 2 or sample_data.shape[1] < 32:
-            return np.array([], dtype=float)
-        n_sc, n_t = sample_data.shape
-        sig_padded = np.zeros((n_sc, n_t + 100), dtype=np.complex128)
-        sig_padded[:, 50:-50] = sample_data
-        sig_padded[:, :50] = sample_data[:, 50:0:-1]
-        sig_padded[:, -50:] = sample_data[:, -1:-51:-1]
-
-        doppler_vector = []
-        for w in range(50, n_t + 50):
-            sig_window = sig_padded[:, w - 16 : w + 16]
-            h = sig_window.T
-            covariance = h @ h.conj().T
-            covariance = np.nan_to_num(covariance)
-            estimator = estimation.RootMUSIC1D(1.0)
-            _, estimates = estimator.estimate(covariance, L)
-            doppler_vector.append(estimates.locations)
-        return np.asarray(doppler_vector, dtype=float).reshape(-1)
-
-    def _extract_csi_ratio_for_stream(
-        self, csi_data: np.ndarray, rx_idx: int, tx_pair: tuple[int, int]
-    ) -> np.ndarray:
-        tx_num, tx_den = tx_pair
-        ratio_chunks: list[np.ndarray] = []
-        max_subants = min(4, csi_data.shape[1] // 64)
-        for subant in range(max_subants):
-            csi_1 = csi_data[:, :, rx_idx, tx_num]
-            csi_1_1 = csi_1[:, 64 * subant : 64 * (1 + subant)]
-            csi_1_1 = csi_1_1[:, 6:-6]
-            valid_idx = [i for i in range(csi_1_1.shape[1]) if i not in (19, 46)]
-            csi_1_1 = csi_1_1[:, np.array(valid_idx, dtype=int)]
-
-            csi_2 = csi_data[:, :, rx_idx, tx_den]
-            csi_2_1 = csi_2[:, 64 * subant : 64 * (1 + subant)]
-            csi_2_1 = csi_2_1[:, 6:-6]
-            valid_idx = [i for i in range(csi_2_1.shape[1]) if i not in (19, 46)]
-            csi_2_1 = csi_2_1[:, np.array(valid_idx, dtype=int)]
-
-            csi_21 = csi_2_1 / (1e-6 + csi_1_1)
-            ratio_chunks.append(csi_21)
-
-        if not ratio_chunks:
-            return np.array([], dtype=np.complex128)
-        csi_ratio = np.concatenate(ratio_chunks, axis=1)
-        if csi_ratio.shape[1] < 2:
-            return csi_ratio
-
-        good_subcarriers = []
-        for iii in range(csi_ratio.shape[1] - 1):
-            corr = np.corrcoef(np.angle(csi_ratio[:, iii]), np.angle(csi_ratio[:, iii + 1]))[0][1]
-            good_subcarriers.append(corr)
-        good_subcarriers = np.abs(np.nan_to_num(np.asarray(good_subcarriers)))
-        good_subcarriers = np.where(good_subcarriers > 0.6)[0]
-        if good_subcarriers.size == 0:
-            return np.array([], dtype=np.complex128)
-        return csi_ratio[:, good_subcarriers]
-
-    def _compute_doppler_payload(
-        self, csi_data: np.ndarray, time_vals: np.ndarray, packet_count: int, tx_pairs: list[tuple[int, int]]
-    ) -> dict:
-        rx_count = csi_data.shape[2] if csi_data.ndim >= 3 else 1
-        if time_vals.size == packet_count:
-            x = np.asarray(time_vals, dtype=float)
-            x_label = "Time (s)"
-        else:
-            x = np.arange(packet_count)
-            x_label = "Packet index"
-        series = []
-        dopplers = []
-        for rx_idx in range(rx_count):
-            for tx_pair in tx_pairs:
-                csi_ratio = self._extract_csi_ratio_for_stream(csi_data, rx_idx, tx_pair)
-                music_output = self._root_music_csi_like(csi_ratio.T) if csi_ratio.size else np.array([])
-                music_output = np.asarray(music_output, dtype=float)
-                dopplers.append(music_output)
-                series.append(
-                    {
-                        "rx_idx": rx_idx,
-                        "tx_pair": tx_pair,
-                        "music_output": music_output,
-                        "x": x[: music_output.size],
-                        "x_label": x_label,
-                    }
-                )
-        return {"series": series, "dopplers": dopplers}
 
     def _plot_doppler_from_payload(self, payload: dict) -> None:
         series = payload.get("series", [])
@@ -962,48 +793,6 @@ class DemoWindow(QWidget):
         self.doppler_figure.subplots_adjust(left=0.08, right=0.95, top=0.96, bottom=0.08)
         self._install_subplot_maximize_buttons(self.doppler_figure, self.doppler_canvas)
         self.doppler_canvas.draw_idle()
-
-    def _compute_dorf_payload(self, dopplers: list[np.ndarray]) -> dict:
-        if len(dopplers) < 24:
-            return {"status": "insufficient", "message": "Need 24 Doppler projections for DoRF velocity estimation."}
-
-        selected = [np.asarray(v, dtype=float).reshape(-1) for v in dopplers[:24]]
-        min_len = min((v.size for v in selected), default=0)
-        if min_len == 0:
-            return {"status": "insufficient", "message": "DoRF estimation skipped: at least one Doppler projection is empty."}
-
-        doppler_matrix = np.vstack([v[:min_len] for v in selected]).T
-        for i in range(doppler_matrix.shape[1]):
-            doppler_matrix[:, i] = doppler_matrix[:, i] - np.mean(doppler_matrix[:, i])
-
-        t = np.arange(doppler_matrix.shape[0])
-        best_v, best_r, best_mask, best_loss, loss_hist, proj_images, _, dorf_meta = estimate_velocity_from_radial_old_dtw(
-            doppler_matrix[:, :],
-            subset_fraction=1.0,
-            outer_iterations=10,
-            mean_zero_velocity=False,
-            true_v=None,
-            time_axis=t,
-            camera_numbers=list(range(doppler_matrix.shape[1])),
-            dtw_window=8,
-            use_support_dtw=False,
-            visualise=self.chk_dorf_visualize.isChecked(),
-            grid_res=6,
-            max_clusters=2,
-            return_metadata=True,
-        )
-
-        return {
-            "status": "ok",
-            "doppler_matrix": doppler_matrix,
-            "best_v": best_v,
-            "best_r": best_r,
-            "best_mask": best_mask,
-            "best_loss": best_loss,
-            "loss_hist": loss_hist,
-            "proj_images": proj_images,
-            "dorf_meta": dorf_meta,
-        }
 
     def _plot_dorf_from_payload(self, payload: dict) -> None:
         self.dorf_figure.clear()
