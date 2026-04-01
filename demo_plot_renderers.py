@@ -79,7 +79,8 @@ class DemoPlotRenderer:
         fig.clear()
         ax = fig.add_subplot(111)
         if payload.get("status") != "ok":
-            ax.text(0.5, 0.5, "HAR unavailable until DoRF is ready.", transform=ax.transAxes, ha="center", va="center")
+            msg = payload.get("message", "HAR unavailable until DoRF is ready.")
+            ax.text(0.5, 0.5, msg, transform=ax.transAxes, ha="center", va="center")
             ax.set_axis_off()
             canvas.draw_idle()
             return
@@ -89,13 +90,16 @@ class DemoPlotRenderer:
         vals = [float(scores[k]) for k in labels]
         bars = ax.bar(labels, vals, color=["#0ea5e9", "#8b5cf6", "#22c55e"][: len(labels)])
         ax.set_ylim(0.0, 1.05)
-        ax.set_title(f"Predicted Activity: {payload.get('label', 'Unknown')}")
+        ax.set_title(
+            f"Predicted Activity: {payload.get('label', 'Unknown')} "
+            f"(label value: {payload.get('label_value', 'N/A')})"
+        )
         ax.set_ylabel("Confidence")
         ax.grid(axis="y", alpha=0.3)
         for bar, val in zip(bars, vals):
             ax.text(bar.get_x() + bar.get_width() / 2, val + 0.02, f"{val:.2f}", ha="center", va="bottom", fontsize=9)
 
-        details = f"Mean energy: {payload.get('mean_energy', 0.0):.3f} | Variance: {payload.get('var_energy', 0.0):.3f}"
+        details = f"Model: originalrocket.py + original_rocket_baseline.pkl"
         ax.text(0.5, -0.16, details, transform=ax.transAxes, ha="center", va="top", fontsize=9, color="#334155")
         fig.tight_layout()
         canvas.draw_idle()
