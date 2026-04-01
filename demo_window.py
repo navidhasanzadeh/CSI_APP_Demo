@@ -925,16 +925,17 @@ class DemoWindow(QWidget):
                 pass
 
         button_refs: list[tuple[object, MatplotlibButton]] = []
+        figure_px_w = max(float(figure.get_figwidth() * figure.dpi), 1.0)
+        figure_px_h = max(float(figure.get_figheight() * figure.dpi), 1.0)
+        button_px = 14.0
+        btn_w = button_px / figure_px_w
+        btn_h = button_px / figure_px_h
         for ax in figure.axes:
             if not ax.get_visible() or ax.get_label() == "<colorbar>":
                 continue
             bbox = ax.get_position()
-            btn_size = 0.015
-            pad = 0.004
-            btn_w = btn_size
-            btn_h = btn_size
-            x0 = min(max(bbox.x1 - btn_w - pad, 0.002), 0.998 - btn_w)
-            y0 = min(max(bbox.y1 - btn_h - pad, 0.002), 0.998 - btn_h)
+            x0 = min(max(bbox.x1 - btn_w, 0.002), 0.998 - btn_w)
+            y0 = min(max(bbox.y1 - btn_h, 0.002), 0.998 - btn_h)
 
             button_ax = figure.add_axes([x0, y0, btn_w, btn_h])
             button = MatplotlibButton(button_ax, "⤢")
