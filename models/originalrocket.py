@@ -35,6 +35,10 @@ class OriginalRocketClassifier:
             return preds
         return [self.class_names_[int(p)] for p in preds]
 
+
+# Backward-compatible alias for pickles saved with a lower-case class name.
+originalrocketclassifier = OriginalRocketClassifier
+
 # --------------------------------------
 # Load and run inference
 # --------------------------------------

@@ -37,8 +37,17 @@ class DemoPlotCalculator:
         try:
             if str(models_dir) not in sys.path:
                 sys.path.append(str(models_dir))
-            # Ensure OriginalRocketClassifier class is importable for pickle.
-            import originalrocket  # noqa: F401
+            # Ensure classifier symbols are importable for pickle payloads that
+            # were serialized from scripts running as __main__.
+            import __main__
+            import originalrocket
+
+            if hasattr(originalrocket, "OriginalRocketClassifier"):
+                setattr(__main__, "OriginalRocketClassifier", originalrocket.OriginalRocketClassifier)
+            if hasattr(originalrocket, "originalrocketclassifier"):
+                setattr(__main__, "originalrocketclassifier", originalrocket.originalrocketclassifier)
+            elif hasattr(originalrocket, "OriginalRocketClassifier"):
+                setattr(__main__, "originalrocketclassifier", originalrocket.OriginalRocketClassifier)
 
             with model_path.open("rb") as f:
                 cls._har_model = pickle.load(f)
