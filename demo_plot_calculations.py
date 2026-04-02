@@ -272,8 +272,15 @@ class DemoPlotCalculator:
             har_input = DemoPlotCalculator._prepare_har_input(proj_images)
             pred_value = int(model.predict(har_input)[0])
 
-            if hasattr(model, "predict_label_names"):
-                pred_label = str(model.predict_label_names(har_input)[0])
+            # Prefer explicit class-name mappings instead of calling
+            # model.predict_label_names(), because some legacy pickles
+            # include a typo (`calss_names_`) that can raise at inference time.
+            class_names = getattr(model, "class_names_", None)
+            if class_names is None:
+                class_names = getattr(model, "calss_names_", None)
+
+            if class_names is not None and pred_value < len(class_names):
+                pred_label = str(class_names[pred_value])
             else:
                 pred_label = str(pred_value)
 
@@ -284,6 +291,8 @@ class DemoPlotCalculator:
                 probs = np.exp(raw - np.max(raw))
                 probs = probs / (np.sum(probs) + 1e-12)
                 class_names = getattr(model, "class_names_", None)
+                if class_names is None:
+                    class_names = getattr(model, "calss_names_", None)
                 classes = np.asarray(getattr(clf, "classes_", np.arange(probs.size))).reshape(-1)
                 scores = {}
                 for i, p in enumerate(probs):
