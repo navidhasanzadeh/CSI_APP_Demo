@@ -6,7 +6,7 @@ from itertools import combinations
 import pickle
 import sys
 from pathlib import Path
-
+from hampel import hampel
 import numpy as np
 
 DORF_PATH = Path(__file__).resolve().parent / "DoRF"
@@ -219,6 +219,11 @@ class DemoPlotCalculator:
         for rx_idx in range(rx_count):
             for tx_pair in tx_pairs:
                 csi_ratio = cls.extract_csi_ratio_for_stream(csi_data, rx_idx, tx_pair)
+                for iii in range(np.shape(csi_ratio)[1]):
+                    CSI_phase = np.angle(csi_ratio[:,iii])
+                    CSI_phase = hampel(CSI_phase, 8).filtered_data
+                    # CSI_phase = plot_fft_energy_and_lowpass(CSI_phase,150,5, visualize= False)['X_filt']                             
+                    csi_ratio[:,iii] = 1 * np.exp(1j * CSI_phase)
                 music_output = cls.root_music_csi_like(csi_ratio.T) if csi_ratio.size else np.array([])
                 music_output = np.asarray(music_output, dtype=float)
                 dopplers.append(music_output)
@@ -229,7 +234,21 @@ class DemoPlotCalculator:
     def compute_dorf_payload(dopplers: list[np.ndarray], dorf_visualize: bool = False) -> dict:
         if len(dopplers) < 24:
             return {"status": "insufficient", "message": "Need 24 Doppler projections for DoRF velocity estimation."}
+        def robust_window_snr(x, win=50, step=1, eps=1e-12):
+                vals = []
+                for i in range(0, len(x) - win + 1, step):
+                    vals.append(np.std(x[i:i+win]))
+                vals = np.asarray(vals)
 
+                noise = np.percentile(vals, 10)
+                signal = np.percentile(vals, 95)
+
+                return 20 * np.log10((signal + eps) / (noise + eps))
+        
+    
+        snr = [robust_window_snr(dopplers[j]) for j in range(len(dopplers))]
+        dopplers = np.array(dopplers)[np.argsort(snr)[-12:]]
+        print("Filtered Dopplers size: ", len(dopplers))
         selected = [np.asarray(v, dtype=float).reshape(-1) for v in dopplers[:24]]
         min_len = min((v.size for v in selected), default=0)
         if min_len == 0:
@@ -269,7 +288,13 @@ class DemoPlotCalculator:
             }
 
         try:
+            print("proj_images shape: ", proj_images.shape)
             har_input = DemoPlotCalculator._prepare_har_input(proj_images)
+            har_input = har_input / (1e-8 + np.std(har_input))
+            print("har_input shape: ", har_input.shape)
+            print(model.predict(har_input))
+            print(model.transformer_)
+            print(model.transformer_.is_fitted)
             pred_value = int(model.predict(har_input)[0])
 
             # Prefer explicit class-name mappings instead of calling
