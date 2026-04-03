@@ -1048,7 +1048,10 @@ class DemoWindow(QWidget):
             else:
                 ordered_panels.append((key, None))
         visible_panels = [panel for panel in ordered_panels if self._subplot_visible(panel[0])]
-        panel_count = max(len(visible_panels), 1)
+        panel_slots = 0
+        for category, _ in visible_panels:
+            panel_slots += 4 if category == "dorf_vmf_clusters" else 1
+        panel_count = max(panel_slots, 1)
         ncols = 2
         nrows = int(ceil(panel_count / ncols))
         grid = self.dorf_figure.add_gridspec(nrows, ncols, hspace=0.6, wspace=0.28)
@@ -1131,10 +1134,15 @@ class DemoWindow(QWidget):
                 ax_cluster.grid(True)
                 ax_cluster.legend(loc="upper right")
             elif category == "dorf_vmf_clusters":
+                if panel_idx % ncols != 0:
+                    spacer_ax = self.dorf_figure.add_subplot(grid[panel_idx // ncols, panel_idx % ncols])
+                    spacer_ax.set_axis_off()
+                    panel_idx += 1
+                row_start = panel_idx // ncols
                 ax_sphere = self.dorf_figure.add_subplot(
-                    grid[panel_idx // ncols, panel_idx % ncols], projection="3d"
+                    grid[row_start : row_start + 2, 0:ncols], projection="3d"
                 )
-                panel_idx += 1
+                panel_idx += 2 * ncols
                 u, vang = np.mgrid[0 : 2 * np.pi : 60j, 0 : np.pi : 30j]
                 ax_sphere.plot_surface(
                     np.cos(u) * np.sin(vang),
