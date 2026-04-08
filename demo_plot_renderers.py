@@ -99,8 +99,7 @@ class DemoPlotRenderer:
         bars = ax.bar(labels, vals, color=["#0ea5e9", "#8b5cf6", "#22c55e"][: len(labels)])
         ax.set_ylim(0.0, 1.05)
         ax.set_title(
-            f"Predicted Activity: {payload.get('label', 'Unknown')} "
-            f"(label value: {payload.get('label_value', 'N/A')})"
+            f"Predicted Activity: {payload.get('label', 'Unknown')}"
         )
         ax.set_ylabel("Confidence")
         ax.grid(axis="y", alpha=0.3)

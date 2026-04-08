@@ -631,6 +631,16 @@ class DemoWindow(QWidget):
             return 0
         return max(0, value)
 
+    def _activity_class_names(self) -> list[str]:
+        value = self.demo_profile.get("activity_class_names", [])
+        if isinstance(value, str):
+            names = [part.strip() for part in value.split(",") if part.strip()]
+        elif isinstance(value, list):
+            names = [str(part).strip() for part in value if str(part).strip()]
+        else:
+            names = []
+        return names
+
     def _crop_to_effective_window(
         self, csi_data: np.ndarray, time_vals: np.ndarray
     ) -> tuple[np.ndarray, np.ndarray]:
@@ -984,7 +994,10 @@ class DemoWindow(QWidget):
 
     def _on_dorf_ready(self, payload: dict) -> None:
         self.plot_renderer.plot_dorf(payload)
-        har_payload = self.plot_calculator.compute_har_payload(payload)
+        har_payload = self.plot_calculator.compute_har_payload(
+            payload,
+            class_names=self._activity_class_names(),
+        )
         self.plot_renderer.plot_har(har_payload)
         self._mark_tab_ready(2)
         self._mark_tab_ready(3)
