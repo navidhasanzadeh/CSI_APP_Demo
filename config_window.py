@@ -405,6 +405,7 @@ DEFAULT_DEMO_PROFILE = {
     "capture_guidance_video_left_path": "videos/right_left.mp4",
     "capture_guidance_video_right_label": "Up/Down",
     "capture_guidance_video_right_path": "videos/up_down.mp4",
+    "activity_class_names": [],
     "subplot_settings": {
         "csi_ratio_magnitude": {"visible": True, "title": "CSI Ratio Magnitude", "xlabel": "Time (s)", "ylabel": "|Ratio|", "info": "Shows CSI magnitude ratio between two TX antennas."},
         "csi_ratio_phase": {"visible": True, "title": "CSI Ratio Phase", "xlabel": "Time (s)", "ylabel": "Phase (rad)", "info": "Shows CSI phase ratio between two TX antennas."},
@@ -979,6 +980,11 @@ def _load_demo_profiles_from_csv():
                     row.get("capture_guidance_video_right_path")
                     or profile["capture_guidance_video_right_path"]
                 ).strip()
+                class_names_text = (row.get("activity_class_names") or "").strip()
+                if class_names_text:
+                    profile["activity_class_names"] = [
+                        part.strip() for part in class_names_text.split(",") if part.strip()
+                    ]
                 raw_subplot_json = (row.get("subplot_settings_json") or "").strip()
                 if raw_subplot_json:
                     try:
@@ -1893,6 +1899,7 @@ def save_demo_profiles(profiles: dict):
                 "capture_guidance_video_left_path",
                 "capture_guidance_video_right_label",
                 "capture_guidance_video_right_path",
+                "activity_class_names",
                 "subplot_settings_json",
                 "dorf_plot_order",
             ]
@@ -2027,6 +2034,14 @@ def save_demo_profiles(profiles: dict):
                                 DEFAULT_DEMO_PROFILE["capture_guidance_video_right_path"],
                             )
                         ).strip(),
+                        "activity_class_names": ",".join(
+                            str(item).strip()
+                            for item in profile.get(
+                                "activity_class_names",
+                                DEFAULT_DEMO_PROFILE["activity_class_names"],
+                            )
+                            if str(item).strip()
+                        ),
                         "subplot_settings_json": json.dumps(
                             profile.get(
                                 "subplot_settings",
@@ -4385,6 +4400,15 @@ class ConfigDialog(QDialog):
         )
         form.addRow("Guidance right video path:", self.txt_demo_capture_guidance_right_path)
 
+        self.txt_demo_activity_class_names = QLineEdit(self.grp_demo)
+        self.txt_demo_activity_class_names.setPlaceholderText(
+            "Class 1 name, Class 2 name, Class 3 name"
+        )
+        form.addRow(
+            "Activity class names (comma-separated):",
+            self.txt_demo_activity_class_names,
+        )
+
         self.txt_demo_subplot_settings = QTextEdit(self.grp_demo)
         self.txt_demo_subplot_settings.setPlaceholderText(
             "JSON object keyed by subplot category with: visible, title, xlabel, ylabel, info"
@@ -6646,6 +6670,18 @@ class ConfigDialog(QDialog):
                     )
                 )
             )
+        if hasattr(self, "txt_demo_activity_class_names"):
+            activity_class_names = profile.get(
+                "activity_class_names",
+                deepcopy(DEFAULT_DEMO_PROFILE["activity_class_names"]),
+            )
+            if isinstance(activity_class_names, list):
+                value = ",".join(
+                    str(item).strip() for item in activity_class_names if str(item).strip()
+                )
+            else:
+                value = str(activity_class_names).strip()
+            self.txt_demo_activity_class_names.setText(value)
         if hasattr(self, "txt_demo_subplot_settings"):
             subplot_settings = profile.get(
                 "subplot_settings", deepcopy(DEFAULT_DEMO_PROFILE["subplot_settings"])
@@ -7691,6 +7727,16 @@ class ConfigDialog(QDialog):
             profile["capture_guidance_video_right_path"] = (
                 self.txt_demo_capture_guidance_right_path.text().strip()
             )
+        if hasattr(self, "txt_demo_activity_class_names"):
+            class_names_text = self.txt_demo_activity_class_names.text().strip()
+            if class_names_text:
+                profile["activity_class_names"] = [
+                    part.strip() for part in class_names_text.split(",") if part.strip()
+                ]
+            else:
+                profile["activity_class_names"] = deepcopy(
+                    DEFAULT_DEMO_PROFILE["activity_class_names"]
+                )
         if hasattr(self, "txt_demo_subplot_settings"):
             raw_json = self.txt_demo_subplot_settings.toPlainText().strip()
             if raw_json:

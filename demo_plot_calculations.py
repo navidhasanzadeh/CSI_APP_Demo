@@ -272,7 +272,7 @@ class DemoPlotCalculator:
         }
 
     @staticmethod
-    def compute_har_payload(dorf_payload: dict) -> dict:
+    def compute_har_payload(dorf_payload: dict, class_names: list[str] | None = None) -> dict:
         if dorf_payload.get("status") != "ok":
             return {"status": "insufficient", "label": "Unknown", "scores": {"Unknown": 1.0}}
 
@@ -300,14 +300,27 @@ class DemoPlotCalculator:
             # Prefer explicit class-name mappings instead of calling
             # model.predict_label_names(), because some legacy pickles
             # include a typo (`calss_names_`) that can raise at inference time.
-            class_names = getattr(model, "class_names_", None)
-            if class_names is None:
-                class_names = getattr(model, "calss_names_", None)
+            model_class_names = getattr(model, "class_names_", None)
+            if model_class_names is None:
+                model_class_names = getattr(model, "calss_names_", None)
 
-            if class_names is not None and pred_value < len(class_names):
-                pred_label = str(class_names[pred_value])
-            else:
-                pred_label = str(pred_value)
+            custom_class_names = [
+                str(name).strip() for name in (class_names or []) if str(name).strip()
+            ]
+
+            def _resolve_class_name(class_id: int, *, fallback_pos: int | None = None) -> str:
+                if custom_class_names:
+                    if 0 <= class_id < len(custom_class_names):
+                        return custom_class_names[class_id]
+                    if 1 <= class_id <= len(custom_class_names):
+                        return custom_class_names[class_id - 1]
+                    if fallback_pos is not None and 0 <= fallback_pos < len(custom_class_names):
+                        return custom_class_names[fallback_pos]
+                if model_class_names is not None and 0 <= class_id < len(model_class_names):
+                    return str(model_class_names[class_id])
+                return str(class_id)
+
+            pred_label = _resolve_class_name(pred_value)
 
             scores: dict[str, float] = {pred_label: 1.0}
             clf = getattr(model, "clf_", None)
@@ -315,17 +328,11 @@ class DemoPlotCalculator:
                 raw = np.asarray(clf.decision_function(model.transformer_.transform(har_input)), dtype=float).reshape(-1)
                 probs = np.exp(raw - np.max(raw))
                 probs = probs / (np.sum(probs) + 1e-12)
-                class_names = getattr(model, "class_names_", None)
-                if class_names is None:
-                    class_names = getattr(model, "calss_names_", None)
                 classes = np.asarray(getattr(clf, "classes_", np.arange(probs.size))).reshape(-1)
                 scores = {}
                 for i, p in enumerate(probs):
                     class_id = int(classes[i]) if i < classes.size else i
-                    if class_names is not None and class_id < len(class_names):
-                        name = str(class_names[class_id])
-                    else:
-                        name = str(class_id)
+                    name = _resolve_class_name(class_id, fallback_pos=i)
                     scores[name] = float(p)
 
             return {
