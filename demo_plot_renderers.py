@@ -11,7 +11,13 @@ class DemoPlotRenderer:
     def __init__(self, window):
         self.window = window
 
-    def plot_ratio(self, payload: dict, apply_hampel: bool) -> None:
+    def plot_ratio(
+        self,
+        payload: dict,
+        *,
+        apply_hampel_phase: bool,
+        apply_hampel_magnitude: bool,
+    ) -> None:
         fig = self.window.figure
         canvas = self.window.canvas
         series = payload.get("series", [])
@@ -33,7 +39,9 @@ class DemoPlotRenderer:
             x = np.asarray(item["x"], dtype=float)
             ratio_mag = np.asarray(item["ratio_mag"], dtype=float)
             ratio_phase = np.asarray(item["ratio_phase"], dtype=float)
-            if apply_hampel:
+            if apply_hampel_magnitude:
+                ratio_mag = self.window._apply_hampel_filter(ratio_mag)
+            if apply_hampel_phase:
                 ratio_phase = self.window._apply_hampel_filter(ratio_phase)
 
             ax_mag = fig.add_subplot(grid[row_idx, 0])

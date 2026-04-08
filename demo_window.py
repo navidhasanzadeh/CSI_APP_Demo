@@ -413,6 +413,12 @@ class DemoWindow(QWidget):
         self.wirlab_logo_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.wirlab_logo_label.setStyleSheet("font-size: 20px; font-weight: 800; color: #0f5e2b;")
         logo_col.addWidget(self.wirlab_logo_label, alignment=Qt.AlignRight)
+        self.qr_website_label = QLabel(self._qr_website_text(), self)
+        self.qr_website_label.setAlignment(Qt.AlignRight | Qt.AlignTop)
+        self.qr_website_label.setStyleSheet("font-size: 12px; font-weight: 700; color: #2563eb;")
+        self.qr_website_label.setWordWrap(False)
+        self.qr_website_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        logo_col.addWidget(self.qr_website_label, alignment=Qt.AlignRight)
         header_row.addLayout(logo_col, stretch=2)
         root.addLayout(header_row)
 
@@ -439,7 +445,14 @@ class DemoWindow(QWidget):
         self.chk_hampel_ratio_phase.setChecked(
             bool(self.demo_profile.get("apply_hampel_to_ratio_phase", False))
         )
+        self.chk_hampel_ratio_magnitude = QCheckBox(
+            "Apply Hampel filter to CSI ratio magnitude", csi_tab
+        )
+        self.chk_hampel_ratio_magnitude.setChecked(
+            bool(self.demo_profile.get("apply_hampel_to_ratio_magnitude", False))
+        )
         csi_layout.addWidget(self.chk_hampel_ratio_phase)
+        csi_layout.addWidget(self.chk_hampel_ratio_magnitude)
         csi_layout.addWidget(self.plot_scroll, stretch=1)
         self.demo_tabs.addTab(csi_tab, "1. CSI Magnitude and Phase")
 
@@ -516,13 +529,6 @@ class DemoWindow(QWidget):
         bottom_row = QVBoxLayout()
         bottom_row.setContentsMargins(0, 0, 0, 0)
         bottom_row.setSpacing(6)
-        self.qr_website_label = QLabel(self._qr_website_text(), self)
-        self.qr_website_label.setAlignment(Qt.AlignLeft | Qt.AlignBottom)
-        self.qr_website_label.setStyleSheet("font-size: 12px; font-weight: 700; color: #2563eb;")
-        self.qr_website_label.setWordWrap(True)
-        self.qr_website_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        bottom_row.addWidget(self.qr_website_label, alignment=Qt.AlignLeft | Qt.AlignBottom)
-
         button_row = QHBoxLayout()
         button_row.setContentsMargins(0, 0, 0, 0)
         button_row.setSpacing(8)
@@ -617,6 +623,31 @@ class DemoWindow(QWidget):
 
     def _capture_duration(self) -> float:
         return max(float(self.demo_profile.get("capture_duration_seconds", 5.0)), 1.0)
+
+    def _effective_capture_samples(self) -> int:
+        try:
+            value = int(self.demo_profile.get("effective_capture_samples", 0))
+        except (TypeError, ValueError):
+            return 0
+        return max(0, value)
+
+    def _crop_to_effective_window(
+        self, csi_data: np.ndarray, time_vals: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
+        packet_count = int(min(csi_data.shape[0], time_vals.size if time_vals.size else csi_data.shape[0]))
+        if packet_count <= 0:
+            return csi_data, time_vals
+        csi_data = csi_data[:packet_count]
+        time_vals = time_vals[:packet_count] if time_vals.size else np.array([])
+
+        effective_samples = self._effective_capture_samples()
+        if effective_samples <= 0 or effective_samples >= packet_count:
+            return csi_data, time_vals
+
+        start_idx = (packet_count - effective_samples) // 2
+        end_idx = start_idx + effective_samples
+        cropped_time = time_vals[start_idx:end_idx] if time_vals.size else time_vals
+        return csi_data[start_idx:end_idx], cropped_time
 
     def _subplot_setting(self, category: str) -> dict:
         settings = dict(DEFAULT_SUBPLOT_SETTINGS.get(category, {}))
@@ -868,7 +899,7 @@ class DemoWindow(QWidget):
     def _apply_hampel_filter(self, values: np.ndarray) -> np.ndarray:
         if hampel is None:
             self.status_label.setText(
-                "Hampel filter is unavailable (missing dependency). Plotting unfiltered ratio phase."
+                "Hampel filter is unavailable (missing dependency). Plotting unfiltered CSI traces."
             )
             return values
         try:
@@ -898,9 +929,10 @@ class DemoWindow(QWidget):
             self.sampling_rate_label.setText("0.00 pkt/s")
             return
 
-        ratio_payload = self.plot_calculator.compute_ratio_payload(
-            csi_data, np.asarray(time_pkts, dtype=float), nfft
+        csi_data, time_vals = self._crop_to_effective_window(
+            np.asarray(csi_data), np.asarray(time_pkts, dtype=float)
         )
+        ratio_payload = self.plot_calculator.compute_ratio_payload(csi_data, time_vals, nfft)
         packet_count = int(ratio_payload["packet_count"])
         csi_data = ratio_payload["csi_data"]
         time_vals = ratio_payload["time_vals"]
@@ -914,7 +946,9 @@ class DemoWindow(QWidget):
             return
 
         self.plot_renderer.plot_ratio(
-            ratio_payload, apply_hampel=self.chk_hampel_ratio_phase.isChecked()
+            ratio_payload,
+            apply_hampel_phase=self.chk_hampel_ratio_phase.isChecked(),
+            apply_hampel_magnitude=self.chk_hampel_ratio_magnitude.isChecked(),
         )
         self._set_tab_processing_state(allow_primary_only=True)
         self.status_label.setText("CSI magnitude/phase plotted. Processing Doppler and DoRF in background...")

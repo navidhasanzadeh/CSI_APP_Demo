@@ -390,6 +390,8 @@ DEFAULT_TIME_PROFILE = {
 }
 DEFAULT_DEMO_PROFILE = {
     "capture_duration_seconds": 5.0,
+    "effective_capture_samples": 0,
+    "apply_hampel_to_ratio_magnitude": False,
     "apply_hampel_to_ratio_phase": False,
     "demo_title_text": "Doppler Radiance Fields (DoRF) for Robust Wi-Fi Sensing and Human Activity Recognition",
     "qr_code_image_path": "",
@@ -905,6 +907,24 @@ def _load_demo_profiles_from_csv():
                     )
                 except (TypeError, ValueError):
                     pass
+                try:
+                    profile["effective_capture_samples"] = max(
+                        0,
+                        int(
+                            row.get(
+                                "effective_capture_samples",
+                                profile["effective_capture_samples"],
+                            )
+                        ),
+                    )
+                except (TypeError, ValueError):
+                    pass
+                profile["apply_hampel_to_ratio_magnitude"] = _as_bool(
+                    row.get(
+                        "apply_hampel_to_ratio_magnitude",
+                        profile["apply_hampel_to_ratio_magnitude"],
+                    )
+                )
                 profile["apply_hampel_to_ratio_phase"] = _as_bool(
                     row.get(
                         "apply_hampel_to_ratio_phase",
@@ -1858,6 +1878,8 @@ def save_demo_profiles(profiles: dict):
             fieldnames = [
                 "profile_name",
                 "capture_duration_seconds",
+                "effective_capture_samples",
+                "apply_hampel_to_ratio_magnitude",
                 "apply_hampel_to_ratio_phase",
                 "demo_title_text",
                 "qr_code_image_path",
@@ -1886,6 +1908,18 @@ def save_demo_profiles(profiles: dict):
                             profile.get(
                                 "capture_duration_seconds",
                                 DEFAULT_DEMO_PROFILE["capture_duration_seconds"],
+                            )
+                        ),
+                        "effective_capture_samples": int(
+                            profile.get(
+                                "effective_capture_samples",
+                                DEFAULT_DEMO_PROFILE["effective_capture_samples"],
+                            )
+                        ),
+                        "apply_hampel_to_ratio_magnitude": bool(
+                            profile.get(
+                                "apply_hampel_to_ratio_magnitude",
+                                DEFAULT_DEMO_PROFILE["apply_hampel_to_ratio_magnitude"],
                             )
                         ),
                         "apply_hampel_to_ratio_phase": bool(
@@ -4275,6 +4309,16 @@ class ConfigDialog(QDialog):
         self.spn_demo_capture_duration.setSingleStep(0.5)
         self.spn_demo_capture_duration.setSuffix(" s")
         form.addRow("Demo CSI capture duration:", self.spn_demo_capture_duration)
+        self.spn_demo_effective_samples = QSpinBox(self.grp_demo)
+        self.spn_demo_effective_samples.setRange(0, 1_000_000)
+        self.spn_demo_effective_samples.setSingleStep(10)
+        self.spn_demo_effective_samples.setSpecialValueText("Use all samples")
+        form.addRow("Effective CSI capture samples:", self.spn_demo_effective_samples)
+        self.chk_demo_hampel_ratio_magnitude = QCheckBox(
+            "Apply Hampel filter to CSI ratio magnitude before plotting",
+            self.grp_demo,
+        )
+        form.addRow("", self.chk_demo_hampel_ratio_magnitude)
         self.chk_demo_hampel_ratio_phase = QCheckBox(
             "Apply Hampel filter to CSI ratio phase before plotting",
             self.grp_demo,
@@ -6467,6 +6511,24 @@ class ConfigDialog(QDialog):
                     )
                 )
             )
+        if hasattr(self, "spn_demo_effective_samples"):
+            self.spn_demo_effective_samples.setValue(
+                int(
+                    profile.get(
+                        "effective_capture_samples",
+                        DEFAULT_DEMO_PROFILE["effective_capture_samples"],
+                    )
+                )
+            )
+        if hasattr(self, "chk_demo_hampel_ratio_magnitude"):
+            self.chk_demo_hampel_ratio_magnitude.setChecked(
+                bool(
+                    profile.get(
+                        "apply_hampel_to_ratio_magnitude",
+                        DEFAULT_DEMO_PROFILE["apply_hampel_to_ratio_magnitude"],
+                    )
+                )
+            )
         if hasattr(self, "chk_demo_hampel_ratio_phase"):
             self.chk_demo_hampel_ratio_phase.setChecked(
                 bool(
@@ -7564,6 +7626,12 @@ class ConfigDialog(QDialog):
             self.demo_profiles[name] = profile
         if hasattr(self, "spn_demo_capture_duration"):
             profile["capture_duration_seconds"] = float(self.spn_demo_capture_duration.value())
+        if hasattr(self, "spn_demo_effective_samples"):
+            profile["effective_capture_samples"] = int(self.spn_demo_effective_samples.value())
+        if hasattr(self, "chk_demo_hampel_ratio_magnitude"):
+            profile["apply_hampel_to_ratio_magnitude"] = bool(
+                self.chk_demo_hampel_ratio_magnitude.isChecked()
+            )
         if hasattr(self, "chk_demo_hampel_ratio_phase"):
             profile["apply_hampel_to_ratio_phase"] = bool(
                 self.chk_demo_hampel_ratio_phase.isChecked()
