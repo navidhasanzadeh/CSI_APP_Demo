@@ -501,6 +501,7 @@ class DemoWindow(QWidget):
         )
         har_layout.addWidget(self.har_scroll, stretch=1)
         self.demo_tabs.addTab(har_tab, "4. Human Activity Recognition")
+        self.demo_tabs.currentChanged.connect(self._on_demo_tab_changed)
 
         content_row = QHBoxLayout()
         content_row.addWidget(self.demo_tabs, stretch=4)
@@ -565,6 +566,31 @@ class DemoWindow(QWidget):
 
     def _mark_tab_ready(self, tab_idx: int) -> None:
         self.demo_tabs.tabBar().setTabEnabled(tab_idx, True)
+
+    def _on_demo_tab_changed(self, tab_idx: int) -> None:
+        self._refresh_active_plot_canvas(tab_idx)
+
+    def _refresh_active_plot_canvas(self, tab_idx: int) -> None:
+        """Reflow and redraw the active plot after tab switches/window resizing."""
+        tab_canvas_pairs = {
+            0: (self.canvas, self.figure),
+            1: (self.doppler_canvas, self.doppler_figure),
+            2: (self.dorf_canvas, self.dorf_figure),
+            3: (self.har_canvas, self.har_figure),
+        }
+        canvas_pair = tab_canvas_pairs.get(tab_idx)
+        if not canvas_pair:
+            return
+
+        canvas, figure = canvas_pair
+        canvas.updateGeometry()
+        canvas.resize(canvas.sizeHint())
+        try:
+            figure.tight_layout()
+        except Exception:
+            # Some layouts use manual subplot spacing and may not support tight_layout.
+            pass
+        canvas.draw_idle()
 
     def _demo_title_text(self) -> str:
         text = str(self.demo_profile.get("demo_title_text") or "").strip()
