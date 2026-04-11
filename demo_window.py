@@ -321,6 +321,7 @@ class DemoWindow(QWidget):
     transfer_progress_started = pyqtSignal(int)
     transfer_progress_updated = pyqtSignal(int, int, str)
     capture_ui_finished = pyqtSignal()
+    synthetic_ratio_ready = pyqtSignal(object)
 
     def __init__(
         self,
@@ -357,6 +358,7 @@ class DemoWindow(QWidget):
         self.transfer_progress_started.connect(self._on_transfer_progress_started)
         self.transfer_progress_updated.connect(self._on_transfer_progress_updated)
         self.capture_ui_finished.connect(self._on_capture_ui_finished)
+        self.synthetic_ratio_ready.connect(self._on_synthetic_ratio_ready)
         self._build_ui()
 
     def _build_ui(self):
@@ -650,6 +652,15 @@ class DemoWindow(QWidget):
     def _capture_duration(self) -> float:
         return max(float(self.demo_profile.get("capture_duration_seconds", 5.0)), 1.0)
 
+    def _capture_mode(self) -> str:
+        value = str(self.demo_profile.get("demo_capture_mode", "router_live")).strip().lower()
+        if value not in {"router_live", "synthetic_random"}:
+            return "router_live"
+        return value
+
+    def _is_synthetic_mode(self) -> bool:
+        return self._capture_mode() == "synthetic_random"
+
     def _effective_capture_samples(self) -> int:
         try:
             value = int(self.demo_profile.get("effective_capture_samples", 0))
@@ -746,7 +757,7 @@ class DemoWindow(QWidget):
         if self._capture_thread and self._capture_thread.is_alive():
             QMessageBox.information(self, "Capture Running", "A demo capture is already running.")
             return
-        if not self.routers_info:
+        if not self._is_synthetic_mode() and not self.routers_info:
             QMessageBox.warning(self, "No Routers", "No connected routers are available for demo capture.")
             return
         self._show_capture_guidance_dialog()
@@ -800,6 +811,9 @@ class DemoWindow(QWidget):
 
     def _run_capture_cycle(self):
         try:
+            if self._is_synthetic_mode():
+                self._run_synthetic_capture_cycle()
+                return
             capture_duration = self._capture_duration()
             capture_tag = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
             downloaded = []
@@ -928,6 +942,63 @@ class DemoWindow(QWidget):
         finally:
             self.capture_ui_finished.emit()
 
+    def _run_synthetic_capture_cycle(self) -> None:
+        capture_duration = self._capture_duration()
+        started_at = time.monotonic()
+        while True:
+            elapsed = max(0.0, time.monotonic() - started_at)
+            self.capture_progress_updated.emit(elapsed, capture_duration)
+            if elapsed >= capture_duration:
+                break
+            time.sleep(0.1)
+        self.capture_progress_updated.emit(capture_duration, capture_duration)
+
+        csi_data, time_vals, nfft = self._generate_synthetic_csi_capture(capture_duration)
+        ratio_payload = self.plot_calculator.compute_ratio_payload(csi_data, time_vals, nfft)
+        self.synthetic_ratio_ready.emit(ratio_payload)
+        self.capture_finished.emit(
+            True,
+            "Synthetic CSI generated and plotted (demo mode without router connection).",
+        )
+
+    def _generate_synthetic_csi_capture(self, duration: float) -> tuple[np.ndarray, np.ndarray, int]:
+        rng = np.random.default_rng()
+        packet_count = max(240, int(duration * 120))
+        nfft = 256
+        rx_count = 4
+        tx_count = 4
+        time_vals = np.linspace(0.0, max(duration, 1.0), packet_count, dtype=float)
+        subcarrier_axis = np.linspace(-1.0, 1.0, nfft, dtype=float)
+        csi_data = np.empty((packet_count, nfft, rx_count, tx_count), dtype=np.complex128)
+
+        base_motion = (
+            0.9 * np.sin(2.0 * np.pi * 0.55 * time_vals)
+            + 0.35 * np.sin(2.0 * np.pi * 1.2 * time_vals + 0.4)
+        )
+        for rx_idx in range(rx_count):
+            for tx_idx in range(tx_count):
+                amp = (
+                    1.0
+                    + 0.08 * np.sin(2.0 * np.pi * (0.2 + 0.05 * rx_idx) * time_vals + 0.3 * tx_idx)
+                    + 0.03 * rng.standard_normal(packet_count)
+                )
+                time_phase = (
+                    (0.5 + 0.08 * rx_idx + 0.06 * tx_idx) * base_motion
+                    + 0.18 * np.sin(2.0 * np.pi * (0.15 + 0.02 * tx_idx) * time_vals + 0.4 * rx_idx)
+                )
+                sc_phase = (0.6 * tx_idx - 0.3 * rx_idx) * subcarrier_axis
+                noise = 0.03 * (
+                    rng.standard_normal((packet_count, nfft))
+                    + 1j * rng.standard_normal((packet_count, nfft))
+                )
+                csi_data[:, :, rx_idx, tx_idx] = (
+                    amp[:, None]
+                    * np.exp(1j * (time_phase[:, None] + sc_phase[None, :]))
+                    + noise
+                )
+
+        return csi_data, time_vals, nfft
+
     @staticmethod
     def _has_payload_packets(pcap_path: Path) -> bool:
         return DemoPlotCalculator.has_payload_packets(pcap_path)
@@ -981,6 +1052,18 @@ class DemoWindow(QWidget):
             )
             return
 
+        self._render_ratio_payload(ratio_payload)
+
+    def _on_plot_requested(self, pcap_path: str, bandwidth_mhz: int):
+        self._plot_ratio(Path(pcap_path), int(bandwidth_mhz))
+
+    def _on_synthetic_ratio_ready(self, ratio_payload: dict) -> None:
+        self._render_ratio_payload(ratio_payload)
+
+    def _render_ratio_payload(self, ratio_payload: dict) -> None:
+        packet_count = int(ratio_payload.get("packet_count", 0))
+        self.packet_count_label.setText(str(packet_count))
+        self.sampling_rate_label.setText(f"{float(ratio_payload.get('sampling_rate', 0.0)):.2f} pkt/s")
         self.plot_renderer.plot_ratio(
             ratio_payload,
             apply_hampel_phase=self.chk_hampel_ratio_phase.isChecked(),
@@ -990,13 +1073,15 @@ class DemoWindow(QWidget):
         self.status_label.setText("CSI magnitude/phase plotted. Processing Doppler and DoRF in background...")
         worker = threading.Thread(
             target=self._run_background_plot_pipeline,
-            args=(csi_data, time_vals, packet_count, tx_pairs),
+            args=(
+                np.asarray(ratio_payload.get("csi_data")),
+                np.asarray(ratio_payload.get("time_vals")),
+                packet_count,
+                list(ratio_payload.get("tx_pairs", [])),
+            ),
             daemon=True,
         )
         worker.start()
-
-    def _on_plot_requested(self, pcap_path: str, bandwidth_mhz: int):
-        self._plot_ratio(Path(pcap_path), int(bandwidth_mhz))
 
     def _run_background_plot_pipeline(
         self, csi_data: np.ndarray, time_vals: np.ndarray, packet_count: int, tx_pairs: list[tuple[int, int]]

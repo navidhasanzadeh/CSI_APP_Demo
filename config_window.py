@@ -389,6 +389,7 @@ DEFAULT_TIME_PROFILE = {
     "time_server": "time.cloudflare.com",
 }
 DEFAULT_DEMO_PROFILE = {
+    "demo_capture_mode": "router_live",
     "capture_duration_seconds": 5.0,
     "effective_capture_samples": 0,
     "apply_hampel_to_ratio_magnitude": False,
@@ -426,6 +427,8 @@ DEFAULT_DEMO_PROFILE = {
         "dorf_vmf_clusters",
     ],
 }
+
+SUPPORTED_DEMO_CAPTURE_MODES = {"router_live", "synthetic_random"}
 
 DEFAULT_WIFI_AP = {
     "name": "",
@@ -572,6 +575,13 @@ def _normalize_hand_mode(value: str | None) -> str:
     if normalized and normalized not in {"live"}:
         return "live"
     return "live"
+
+
+def _normalize_demo_capture_mode(value: str | None) -> str:
+    normalized = (value or "").strip().lower()
+    if normalized not in SUPPORTED_DEMO_CAPTURE_MODES:
+        return DEFAULT_DEMO_PROFILE["demo_capture_mode"]
+    return normalized
 
 
 def _normalize_hex_color(value: str | None, default: str) -> str:
@@ -899,6 +909,9 @@ def _load_demo_profiles_from_csv():
                 if not profile_name:
                     continue
                 profile = deepcopy(DEFAULT_DEMO_PROFILE)
+                profile["demo_capture_mode"] = _normalize_demo_capture_mode(
+                    row.get("demo_capture_mode", profile["demo_capture_mode"])
+                )
                 try:
                     profile["capture_duration_seconds"] = float(
                         row.get(
@@ -1883,6 +1896,7 @@ def save_demo_profiles(profiles: dict):
         with DEMO_FILE.open("w", encoding="utf-8", newline="") as f:
             fieldnames = [
                 "profile_name",
+                "demo_capture_mode",
                 "capture_duration_seconds",
                 "effective_capture_samples",
                 "apply_hampel_to_ratio_magnitude",
@@ -1911,6 +1925,12 @@ def save_demo_profiles(profiles: dict):
                 writer.writerow(
                     {
                         "profile_name": profile_name,
+                        "demo_capture_mode": _normalize_demo_capture_mode(
+                            profile.get(
+                                "demo_capture_mode",
+                                DEFAULT_DEMO_PROFILE["demo_capture_mode"],
+                            )
+                        ),
                         "capture_duration_seconds": float(
                             profile.get(
                                 "capture_duration_seconds",
@@ -4324,6 +4344,15 @@ class ConfigDialog(QDialog):
         self.spn_demo_capture_duration.setSingleStep(0.5)
         self.spn_demo_capture_duration.setSuffix(" s")
         form.addRow("Demo CSI capture duration:", self.spn_demo_capture_duration)
+        self.cmb_demo_capture_mode = QComboBox(self.grp_demo)
+        self.cmb_demo_capture_mode.addItem(
+            "Live capture from routers", userData="router_live"
+        )
+        self.cmb_demo_capture_mode.addItem(
+            "Synthetic random CSI (no router connection)",
+            userData="synthetic_random",
+        )
+        form.addRow("Demo capture mode:", self.cmb_demo_capture_mode)
         self.spn_demo_effective_samples = QSpinBox(self.grp_demo)
         self.spn_demo_effective_samples.setRange(0, 1_000_000)
         self.spn_demo_effective_samples.setSingleStep(10)
@@ -6535,6 +6564,12 @@ class ConfigDialog(QDialog):
                     )
                 )
             )
+        if hasattr(self, "cmb_demo_capture_mode"):
+            mode = _normalize_demo_capture_mode(
+                profile.get("demo_capture_mode", DEFAULT_DEMO_PROFILE["demo_capture_mode"])
+            )
+            idx = self.cmb_demo_capture_mode.findData(mode)
+            self.cmb_demo_capture_mode.setCurrentIndex(idx if idx >= 0 else 0)
         if hasattr(self, "spn_demo_effective_samples"):
             self.spn_demo_effective_samples.setValue(
                 int(
@@ -7662,6 +7697,10 @@ class ConfigDialog(QDialog):
             self.demo_profiles[name] = profile
         if hasattr(self, "spn_demo_capture_duration"):
             profile["capture_duration_seconds"] = float(self.spn_demo_capture_duration.value())
+        if hasattr(self, "cmb_demo_capture_mode"):
+            profile["demo_capture_mode"] = _normalize_demo_capture_mode(
+                self.cmb_demo_capture_mode.currentData()
+            )
         if hasattr(self, "spn_demo_effective_samples"):
             profile["effective_capture_samples"] = int(self.spn_demo_effective_samples.value())
         if hasattr(self, "chk_demo_hampel_ratio_magnitude"):
