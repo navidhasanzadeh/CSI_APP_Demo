@@ -235,6 +235,9 @@ def main(argv: list[str] | None = None):
     wifi_profile = wifi_profiles.get(selected_wifi, [])
     time_profile = time_profiles.get(selected_time, {})
     demo_profile = demo_profiles.get(selected_demo, {})
+    demo_capture_mode = str(
+        demo_profile.get("demo_capture_mode", "router_live")
+    ).strip().lower()
     time_ref = time_reference.build_time_reference(time_profile)
     time_reference.set_global_time_reference(time_ref)
     if isinstance(wifi_profile, list):
@@ -257,6 +260,8 @@ def main(argv: list[str] | None = None):
     scenario = str(wifi_profile.get("csi_capture_scenario", "scenario_2")).lower()
     access_points = wifi_profile.get("access_points", []) if wifi_profile else []
     wifi_enabled = bool(access_points) and scenario != "no_collection"
+    if scenario == "demo" and demo_capture_mode == "synthetic_random":
+        wifi_enabled = False
     if wifi_enabled:
         expected_duration = _compute_expected_duration(experiment, actions)
         if scenario == "scenario_1":
