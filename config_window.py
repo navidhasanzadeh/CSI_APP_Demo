@@ -396,6 +396,7 @@ DEFAULT_DEMO_PROFILE = {
     "apply_hampel_to_ratio_phase": False,
     "demo_title_text": "Doppler Radiance Fields (DoRF) for Robust Wi-Fi Sensing and Human Activity Recognition",
     "qr_code_image_path": "",
+    "qr_code_image_size_px": 160,
     "icassp_logo_image_path": "",
     "qr_website_url": "https://dorf.navidhasanzadeh.com",
     "icassp_title_text": "IEEE ICASSP 2026",
@@ -957,6 +958,21 @@ def _load_demo_profiles_from_csv():
                     row.get("qr_code_image_path")
                     or profile["qr_code_image_path"]
                 ).strip()
+                try:
+                    profile["qr_code_image_size_px"] = max(
+                        80,
+                        min(
+                            600,
+                            int(
+                                row.get(
+                                    "qr_code_image_size_px",
+                                    profile["qr_code_image_size_px"],
+                                )
+                            ),
+                        ),
+                    )
+                except (TypeError, ValueError):
+                    pass
                 profile["icassp_logo_image_path"] = (
                     row.get("icassp_logo_image_path")
                     or profile["icassp_logo_image_path"]
@@ -1944,6 +1960,7 @@ def save_demo_profiles(profiles: dict):
                 "apply_hampel_to_ratio_phase",
                 "demo_title_text",
                 "qr_code_image_path",
+                "qr_code_image_size_px",
                 "icassp_logo_image_path",
                 "qr_website_url",
                 "icassp_title_text",
@@ -2015,6 +2032,18 @@ def save_demo_profiles(profiles: dict):
                                 DEFAULT_DEMO_PROFILE["qr_code_image_path"],
                             )
                         ).strip(),
+                        "qr_code_image_size_px": max(
+                            80,
+                            min(
+                                600,
+                                int(
+                                    profile.get(
+                                        "qr_code_image_size_px",
+                                        DEFAULT_DEMO_PROFILE["qr_code_image_size_px"],
+                                    )
+                                ),
+                            ),
+                        ),
                         "icassp_logo_image_path": str(
                             profile.get(
                                 "icassp_logo_image_path",
@@ -4452,6 +4481,11 @@ class ConfigDialog(QDialog):
         self.txt_demo_qr_image_path = QLineEdit(self.grp_demo)
         self.txt_demo_qr_image_path.setPlaceholderText("/path/to/qr-code.png")
         form.addRow("QR image path:", self.txt_demo_qr_image_path)
+        self.spn_demo_qr_image_size = QSpinBox(self.grp_demo)
+        self.spn_demo_qr_image_size.setRange(80, 600)
+        self.spn_demo_qr_image_size.setSuffix(" px")
+        self.spn_demo_qr_image_size.setSingleStep(10)
+        form.addRow("QR image size:", self.spn_demo_qr_image_size)
 
         self.txt_demo_icassp_logo_image_path = QLineEdit(self.grp_demo)
         self.txt_demo_icassp_logo_image_path.setPlaceholderText("/path/to/icassp-logo.png")
@@ -6720,6 +6754,21 @@ class ConfigDialog(QDialog):
                     )
                 )
             )
+        if hasattr(self, "spn_demo_qr_image_size"):
+            self.spn_demo_qr_image_size.setValue(
+                max(
+                    80,
+                    min(
+                        600,
+                        int(
+                            profile.get(
+                                "qr_code_image_size_px",
+                                DEFAULT_DEMO_PROFILE["qr_code_image_size_px"],
+                            )
+                        ),
+                    ),
+                )
+            )
         if hasattr(self, "txt_demo_icassp_logo_image_path"):
             self.txt_demo_icassp_logo_image_path.setText(
                 str(
@@ -7859,6 +7908,8 @@ class ConfigDialog(QDialog):
             )
         if hasattr(self, "txt_demo_qr_image_path"):
             profile["qr_code_image_path"] = self.txt_demo_qr_image_path.text().strip()
+        if hasattr(self, "spn_demo_qr_image_size"):
+            profile["qr_code_image_size_px"] = int(self.spn_demo_qr_image_size.value())
         if hasattr(self, "txt_demo_icassp_logo_image_path"):
             profile["icassp_logo_image_path"] = (
                 self.txt_demo_icassp_logo_image_path.text().strip()
