@@ -522,7 +522,6 @@ class DemoWindow(QWidget):
         self.packet_count_value = "0"
         self.sampling_rate_value = "0.00 pkt/s"
         self.datetime_value = "-"
-        self._start_clock_updates()
 
         bottom_row = QVBoxLayout()
         bottom_row.setContentsMargins(0, 0, 0, 0)
@@ -558,6 +557,7 @@ class DemoWindow(QWidget):
         self.metrics_status_bar.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         bottom_row.addWidget(self.metrics_status_bar)
         self._refresh_metrics_status_bar()
+        self._start_clock_updates()
 
         root.addLayout(bottom_row)
         self._set_tab_processing_state(allow_primary_only=True)
