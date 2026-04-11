@@ -7,6 +7,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 from math import ceil
+from urllib.error import URLError
+from urllib.request import urlopen
 
 import numpy as np
 from matplotlib.backends.backend_qt5agg import (
@@ -24,7 +26,6 @@ from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtWidgets import (
     QDialog,
     QCheckBox,
-    QFormLayout,
     QHBoxLayout,
     QLabel,
     QMessageBox,
@@ -373,29 +374,39 @@ class DemoWindow(QWidget):
         header_row.setSpacing(10)
         header_left_col = QVBoxLayout()
         header_left_col.setSpacing(1)
+        self.icassp_logo_image_label = QLabel(self)
+        self.icassp_logo_image_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.icassp_logo_image_label.setFixedSize(180, 70)
+        self.icassp_logo_image_label.setStyleSheet("border: none;")
+        self._update_icassp_logo()
+        header_left_col.addWidget(self.icassp_logo_image_label)
+
         self.icassp_logo_label = QLabel(self._icassp_title_text(), self)
         self.icassp_logo_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.icassp_logo_label.setStyleSheet("font-size: 18px; font-weight: 700; color: #1e3a8a;")
         header_left_col.addWidget(self.icassp_logo_label)
+        header_row.addLayout(header_left_col, stretch=2)
+
+        title_col = QVBoxLayout()
+        title_col.setSpacing(2)
+        self.title_label = QLabel(self._demo_title_text(), self)
+        self.title_label.setAlignment(Qt.AlignCenter)
+        self.title_label.setWordWrap(True)
+        self.title_label.setStyleSheet("font-size: 22px; font-weight: 700; color: #0b1f3a;")
+        title_col.addWidget(self.title_label)
 
         self.authors_label = QLabel(self._authors_text(), self)
         self.authors_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.authors_label.setWordWrap(True)
         self.authors_label.setStyleSheet("font-size: 12px; font-weight: 600; color: #111827;")
-        header_left_col.addWidget(self.authors_label)
+        title_col.addWidget(self.authors_label, alignment=Qt.AlignCenter)
 
         self.university_label = QLabel(self._university_text(), self)
         self.university_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.university_label.setWordWrap(True)
         self.university_label.setStyleSheet("font-size: 12px; font-weight: 600; color: #111827;")
-        header_left_col.addWidget(self.university_label)
-        header_row.addLayout(header_left_col, stretch=2)
-
-        self.title_label = QLabel(self._demo_title_text(), self)
-        self.title_label.setAlignment(Qt.AlignCenter)
-        self.title_label.setWordWrap(True)
-        self.title_label.setStyleSheet("font-size: 22px; font-weight: 700; color: #0b1f3a;")
-        header_row.addWidget(self.title_label, stretch=4)
+        title_col.addWidget(self.university_label, alignment=Qt.AlignCenter)
+        header_row.addLayout(title_col, stretch=4)
 
         logo_col = QVBoxLayout()
         logo_col.setSpacing(2)
@@ -507,26 +518,10 @@ class DemoWindow(QWidget):
 
         content_row = QHBoxLayout()
         content_row.addWidget(self.demo_tabs, stretch=4)
-
-        info_pane = QFrame(self)
-        info_pane.setMaximumWidth(260)
-        info_pane.setFrameShape(QFrame.StyledPanel)
-        info_pane.setStyleSheet(
-            "QFrame {border: 1px solid #cfd8e3; border-radius: 8px; background: #f8fafc;}"
-            "QLabel {color: #1f2937; font-size: 12px;}"
-        )
-        info_layout = QFormLayout(info_pane)
-        info_layout.setContentsMargins(8, 8, 8, 8)
-        info_layout.setVerticalSpacing(4)
-        info_layout.setLabelAlignment(Qt.AlignLeft)
-        self.packet_count_label = QLabel("-", info_pane)
-        self.sampling_rate_label = QLabel("- pkt/s", info_pane)
-        self.datetime_label = QLabel("-", info_pane)
-        info_layout.addRow("Received packets:", self.packet_count_label)
-        info_layout.addRow("Sampling rate:", self.sampling_rate_label)
-        info_layout.addRow("Current date & time:", self.datetime_label)
-        content_row.addWidget(info_pane, stretch=1)
         root.addLayout(content_row, stretch=1)
+        self.packet_count_value = "0"
+        self.sampling_rate_value = "0.00 pkt/s"
+        self.datetime_value = "-"
         self._start_clock_updates()
 
         bottom_row = QVBoxLayout()
@@ -555,6 +550,14 @@ class DemoWindow(QWidget):
         button_row.addWidget(self.btn_close)
         button_row.addStretch(1)
         bottom_row.addLayout(button_row)
+        self.metrics_status_bar = QLabel(self)
+        self.metrics_status_bar.setStyleSheet(
+            "QLabel {border: 1px solid #cfd8e3; border-radius: 6px; background: #f8fafc; "
+            "color: #1f2937; font-size: 12px; padding: 5px 8px;}"
+        )
+        self.metrics_status_bar.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        bottom_row.addWidget(self.metrics_status_bar)
+        self._refresh_metrics_status_bar()
 
         root.addLayout(bottom_row)
         self._set_tab_processing_state(allow_primary_only=True)
@@ -626,7 +629,50 @@ class DemoWindow(QWidget):
         self._update_datetime_label()
 
     def _update_datetime_label(self) -> None:
-        self.datetime_label.setText(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        self.datetime_value = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self._refresh_metrics_status_bar()
+
+    def _refresh_metrics_status_bar(self) -> None:
+        self.metrics_status_bar.setText(
+            f"Received packets: {self.packet_count_value}    |    "
+            f"Sampling rate: {self.sampling_rate_value}    |    "
+            f"Current date & time: {self.datetime_value}"
+        )
+
+    def _set_capture_metrics(self, *, packet_count: int | str, sampling_rate: float | str) -> None:
+        self.packet_count_value = str(packet_count)
+        if isinstance(sampling_rate, str):
+            self.sampling_rate_value = sampling_rate
+        else:
+            self.sampling_rate_value = f"{float(sampling_rate):.2f} pkt/s"
+        self._refresh_metrics_status_bar()
+
+    def _update_icassp_logo(self) -> None:
+        logo_url = (
+            "https://2026.ieeeicassp.org/wp-content/uploads/sites/4/2019/08/logo_ICASSP.png"
+        )
+        pixmap = QPixmap()
+        try:
+            with urlopen(logo_url, timeout=4) as response:
+                pixmap.loadFromData(response.read())
+        except (OSError, URLError, TimeoutError):
+            pixmap = QPixmap()
+
+        if pixmap.isNull():
+            self.icassp_logo_image_label.setText("ICASSP Logo")
+            self.icassp_logo_image_label.setStyleSheet(
+                "QLabel {border: 1px dashed #94a3b8; color: #475569; font-size: 11px;}"
+            )
+            return
+
+        self.icassp_logo_image_label.setPixmap(
+            pixmap.scaled(
+                self.icassp_logo_image_label.size(),
+                Qt.KeepAspectRatio,
+                Qt.SmoothTransformation,
+            )
+        )
+        self.icassp_logo_image_label.setText("")
 
     def _update_qr_placeholder(self) -> None:
         path = self._qr_image_path()
@@ -1025,15 +1071,13 @@ class DemoWindow(QWidget):
             self.status_label.setText(
                 f"Cannot plot {pcap_path.name}: PCAP is empty (header only, no CSI packets)."
             )
-            self.packet_count_label.setText("0")
-            self.sampling_rate_label.setText("0.00 pkt/s")
+            self._set_capture_metrics(packet_count=0, sampling_rate=0.0)
             return
         csi_data, time_pkts, nfft = self.plot_calculator.load_csi_capture(pcap_path, bandwidth_mhz)
 
         if csi_data is None or time_pkts is None or csi_data.size == 0:
             self.status_label.setText(f"Unable to load CSI data from {pcap_path.name}.")
-            self.packet_count_label.setText("0")
-            self.sampling_rate_label.setText("0.00 pkt/s")
+            self._set_capture_metrics(packet_count=0, sampling_rate=0.0)
             return
 
         csi_data, time_vals = self._crop_to_effective_window(
@@ -1044,8 +1088,10 @@ class DemoWindow(QWidget):
         csi_data = ratio_payload["csi_data"]
         time_vals = ratio_payload["time_vals"]
         tx_pairs = ratio_payload["tx_pairs"]
-        self.packet_count_label.setText(str(packet_count))
-        self.sampling_rate_label.setText(f"{float(ratio_payload['sampling_rate']):.2f} pkt/s")
+        self._set_capture_metrics(
+            packet_count=packet_count,
+            sampling_rate=float(ratio_payload["sampling_rate"]),
+        )
         if not tx_pairs:
             self.status_label.setText(
                 f"Unable to compute CSI ratio from {pcap_path.name}: at least 2 TX antennas are required."
@@ -1062,8 +1108,10 @@ class DemoWindow(QWidget):
 
     def _render_ratio_payload(self, ratio_payload: dict) -> None:
         packet_count = int(ratio_payload.get("packet_count", 0))
-        self.packet_count_label.setText(str(packet_count))
-        self.sampling_rate_label.setText(f"{float(ratio_payload.get('sampling_rate', 0.0)):.2f} pkt/s")
+        self._set_capture_metrics(
+            packet_count=packet_count,
+            sampling_rate=float(ratio_payload.get("sampling_rate", 0.0)),
+        )
         self.plot_renderer.plot_ratio(
             ratio_payload,
             apply_hampel_phase=self.chk_hampel_ratio_phase.isChecked(),
