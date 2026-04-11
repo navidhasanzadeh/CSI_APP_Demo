@@ -371,7 +371,7 @@ class DemoWindow(QWidget):
         header_row.setContentsMargins(0, 0, 0, 0)
         header_row.setSpacing(6)
         header_left_col = QVBoxLayout()
-        header_left_col.setSpacing(0)
+        header_left_col.setSpacing(self._icassp_logo_text_vertical_gap())
         self.icassp_logo_image_label = QLabel(self)
         self.icassp_logo_image_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.icassp_logo_image_label.setFixedSize(180, 70)
@@ -386,7 +386,7 @@ class DemoWindow(QWidget):
         header_row.addLayout(header_left_col, stretch=2)
 
         title_col = QVBoxLayout()
-        title_col.setSpacing(0)
+        title_col.setSpacing(self._title_authors_university_vertical_gap())
         self.title_label = QLabel(self._demo_title_text(), self)
         self.title_label.setAlignment(Qt.AlignCenter)
         self.title_label.setWordWrap(True)
@@ -615,6 +615,13 @@ class DemoWindow(QWidget):
         text = str(self.demo_profile.get("icassp_title_text") or "").strip()
         return text or "IEEE ICASSP 2026"
 
+    def _icassp_logo_text_vertical_gap(self) -> int:
+        try:
+            value = int(self.demo_profile.get("icassp_logo_text_vertical_gap", 0))
+        except (TypeError, ValueError):
+            value = 0
+        return max(0, value)
+
     def _authors_text(self) -> str:
         text = str(self.demo_profile.get("authors_text") or "").strip()
         return text or "Authors: Navid Hasanzadeh, Shahrokh Valaee"
@@ -622,6 +629,15 @@ class DemoWindow(QWidget):
     def _university_text(self) -> str:
         text = str(self.demo_profile.get("university_text") or "").strip()
         return text or "University of Toronto"
+
+    def _title_authors_university_vertical_gap(self) -> int:
+        try:
+            value = int(
+                self.demo_profile.get("title_authors_university_vertical_gap", 0)
+            )
+        except (TypeError, ValueError):
+            value = 0
+        return max(0, value)
 
     def _start_clock_updates(self) -> None:
         self._clock_timer = QTimer(self)

@@ -399,8 +399,10 @@ DEFAULT_DEMO_PROFILE = {
     "icassp_logo_image_path": "",
     "qr_website_url": "https://dorf.navidhasanzadeh.com",
     "icassp_title_text": "IEEE ICASSP 2026",
+    "icassp_logo_text_vertical_gap": 0,
     "authors_text": "Authors: Navid Hasanzadeh, Shahrokh Valaee",
     "university_text": "University of Toronto",
+    "title_authors_university_vertical_gap": 0,
     "capture_guidance_title": "CSI Capture Guidance",
     "capture_guidance_message": "Please perform one of these gestures.",
     "capture_guidance_video_left_label": "Left/Right",
@@ -966,6 +968,15 @@ def _load_demo_profiles_from_csv():
                     row.get("icassp_title_text")
                     or profile["icassp_title_text"]
                 ).strip() or DEFAULT_DEMO_PROFILE["icassp_title_text"]
+                try:
+                    profile["icassp_logo_text_vertical_gap"] = int(
+                        row.get(
+                            "icassp_logo_text_vertical_gap",
+                            profile["icassp_logo_text_vertical_gap"],
+                        )
+                    )
+                except (TypeError, ValueError):
+                    pass
                 profile["authors_text"] = (
                     row.get("authors_text")
                     or profile["authors_text"]
@@ -974,6 +985,15 @@ def _load_demo_profiles_from_csv():
                     row.get("university_text")
                     or profile["university_text"]
                 ).strip() or DEFAULT_DEMO_PROFILE["university_text"]
+                try:
+                    profile["title_authors_university_vertical_gap"] = int(
+                        row.get(
+                            "title_authors_university_vertical_gap",
+                            profile["title_authors_university_vertical_gap"],
+                        )
+                    )
+                except (TypeError, ValueError):
+                    pass
                 profile["capture_guidance_title"] = (
                     row.get("capture_guidance_title")
                     or profile["capture_guidance_title"]
@@ -1911,8 +1931,10 @@ def save_demo_profiles(profiles: dict):
                 "icassp_logo_image_path",
                 "qr_website_url",
                 "icassp_title_text",
+                "icassp_logo_text_vertical_gap",
                 "authors_text",
                 "university_text",
+                "title_authors_university_vertical_gap",
                 "capture_guidance_title",
                 "capture_guidance_message",
                 "capture_guidance_video_left_label",
@@ -2000,6 +2022,12 @@ def save_demo_profiles(profiles: dict):
                             ).strip()
                             or DEFAULT_DEMO_PROFILE["icassp_title_text"]
                         ),
+                        "icassp_logo_text_vertical_gap": int(
+                            profile.get(
+                                "icassp_logo_text_vertical_gap",
+                                DEFAULT_DEMO_PROFILE["icassp_logo_text_vertical_gap"],
+                            )
+                        ),
                         "authors_text": (
                             str(
                                 profile.get(
@@ -2017,6 +2045,14 @@ def save_demo_profiles(profiles: dict):
                                 )
                             ).strip()
                             or DEFAULT_DEMO_PROFILE["university_text"]
+                        ),
+                        "title_authors_university_vertical_gap": int(
+                            profile.get(
+                                "title_authors_university_vertical_gap",
+                                DEFAULT_DEMO_PROFILE[
+                                    "title_authors_university_vertical_gap"
+                                ],
+                            )
                         ),
                         "capture_guidance_title": (
                             str(
@@ -4349,7 +4385,14 @@ class ConfigDialog(QDialog):
 
         layout.addLayout(row)
 
-        self.grp_demo = QGroupBox("Demo Settings", tab)
+        demo_scroll = QScrollArea(tab)
+        demo_scroll.setWidgetResizable(True)
+        demo_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        demo_scroll_content = QWidget(demo_scroll)
+        demo_scroll_layout = QVBoxLayout(demo_scroll_content)
+        demo_scroll_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.grp_demo = QGroupBox("Demo Settings", demo_scroll_content)
         form = QFormLayout(self.grp_demo)
         self.spn_demo_capture_duration = QDoubleSpinBox(self.grp_demo)
         self.spn_demo_capture_duration.setRange(1.0, 300.0)
@@ -4400,6 +4443,13 @@ class ConfigDialog(QDialog):
         self.txt_demo_icassp_title = QLineEdit(self.grp_demo)
         self.txt_demo_icassp_title.setPlaceholderText(DEFAULT_DEMO_PROFILE["icassp_title_text"])
         form.addRow("Top-left conference text:", self.txt_demo_icassp_title)
+        self.spn_demo_icassp_logo_text_vertical_gap = QSpinBox(self.grp_demo)
+        self.spn_demo_icassp_logo_text_vertical_gap.setRange(0, 80)
+        self.spn_demo_icassp_logo_text_vertical_gap.setSuffix(" px")
+        form.addRow(
+            "Top-left logo/text vertical gap:",
+            self.spn_demo_icassp_logo_text_vertical_gap,
+        )
 
         self.txt_demo_authors = QLineEdit(self.grp_demo)
         self.txt_demo_authors.setPlaceholderText(DEFAULT_DEMO_PROFILE["authors_text"])
@@ -4408,6 +4458,13 @@ class ConfigDialog(QDialog):
         self.txt_demo_university = QLineEdit(self.grp_demo)
         self.txt_demo_university.setPlaceholderText(DEFAULT_DEMO_PROFILE["university_text"])
         form.addRow("University text:", self.txt_demo_university)
+        self.spn_demo_title_authors_university_vertical_gap = QSpinBox(self.grp_demo)
+        self.spn_demo_title_authors_university_vertical_gap.setRange(0, 80)
+        self.spn_demo_title_authors_university_vertical_gap.setSuffix(" px")
+        form.addRow(
+            "Title/authors/university vertical gap:",
+            self.spn_demo_title_authors_university_vertical_gap,
+        )
 
         self.txt_demo_capture_guidance_title = QLineEdit(self.grp_demo)
         self.txt_demo_capture_guidance_title.setPlaceholderText(
@@ -4474,7 +4531,10 @@ class ConfigDialog(QDialog):
         help_label.setWordWrap(True)
         form.addRow("", help_label)
 
-        layout.addWidget(self.grp_demo)
+        demo_scroll_layout.addWidget(self.grp_demo)
+        demo_scroll_layout.addStretch(1)
+        demo_scroll.setWidget(demo_scroll_content)
+        layout.addWidget(demo_scroll)
         layout.addStretch(1)
         return tab
 
@@ -6658,6 +6718,15 @@ class ConfigDialog(QDialog):
                     )
                 )
             )
+        if hasattr(self, "spn_demo_icassp_logo_text_vertical_gap"):
+            self.spn_demo_icassp_logo_text_vertical_gap.setValue(
+                int(
+                    profile.get(
+                        "icassp_logo_text_vertical_gap",
+                        DEFAULT_DEMO_PROFILE["icassp_logo_text_vertical_gap"],
+                    )
+                )
+            )
         if hasattr(self, "txt_demo_authors"):
             self.txt_demo_authors.setText(
                 str(
@@ -6673,6 +6742,17 @@ class ConfigDialog(QDialog):
                     profile.get(
                         "university_text",
                         DEFAULT_DEMO_PROFILE["university_text"],
+                    )
+                )
+            )
+        if hasattr(self, "spn_demo_title_authors_university_vertical_gap"):
+            self.spn_demo_title_authors_university_vertical_gap.setValue(
+                int(
+                    profile.get(
+                        "title_authors_university_vertical_gap",
+                        DEFAULT_DEMO_PROFILE[
+                            "title_authors_university_vertical_gap"
+                        ],
                     )
                 )
             )
@@ -7757,6 +7837,10 @@ class ConfigDialog(QDialog):
                 self.txt_demo_icassp_title.text().strip()
                 or DEFAULT_DEMO_PROFILE["icassp_title_text"]
             )
+        if hasattr(self, "spn_demo_icassp_logo_text_vertical_gap"):
+            profile["icassp_logo_text_vertical_gap"] = int(
+                self.spn_demo_icassp_logo_text_vertical_gap.value()
+            )
         if hasattr(self, "txt_demo_authors"):
             profile["authors_text"] = (
                 self.txt_demo_authors.text().strip()
@@ -7766,6 +7850,10 @@ class ConfigDialog(QDialog):
             profile["university_text"] = (
                 self.txt_demo_university.text().strip()
                 or DEFAULT_DEMO_PROFILE["university_text"]
+            )
+        if hasattr(self, "spn_demo_title_authors_university_vertical_gap"):
+            profile["title_authors_university_vertical_gap"] = int(
+                self.spn_demo_title_authors_university_vertical_gap.value()
             )
         if hasattr(self, "txt_demo_capture_guidance_title"):
             profile["capture_guidance_title"] = (
