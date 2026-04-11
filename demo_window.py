@@ -386,23 +386,32 @@ class DemoWindow(QWidget):
         header_row.addLayout(header_left_col, stretch=2)
 
         title_col = QVBoxLayout()
-        title_col.setSpacing(self._title_authors_university_vertical_gap())
+        title_col.setContentsMargins(0, 0, 0, 0)
+        title_col.setSpacing(0)
         self.title_label = QLabel(self._demo_title_text(), self)
         self.title_label.setAlignment(Qt.AlignCenter)
         self.title_label.setWordWrap(True)
-        self.title_label.setStyleSheet("font-size: 22px; font-weight: 700; color: #0b1f3a;")
+        self.title_label.setStyleSheet(
+            "font-size: 22px; font-weight: 700; color: #0b1f3a; margin: 0px; padding: 0px;"
+        )
         title_col.addWidget(self.title_label)
+        title_col.addSpacing(self._title_authors_vertical_gap())
 
         self.authors_label = QLabel(self._authors_text(), self)
         self.authors_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.authors_label.setWordWrap(False)
-        self.authors_label.setStyleSheet("font-size: 12px; font-weight: 600; color: #111827;")
+        self.authors_label.setStyleSheet(
+            "font-size: 12px; font-weight: 600; color: #111827; margin: 0px; padding: 0px;"
+        )
         title_col.addWidget(self.authors_label, alignment=Qt.AlignCenter)
+        title_col.addSpacing(self._authors_university_vertical_gap())
 
         self.university_label = QLabel(self._university_text(), self)
         self.university_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.university_label.setWordWrap(False)
-        self.university_label.setStyleSheet("font-size: 12px; font-weight: 600; color: #111827;")
+        self.university_label.setStyleSheet(
+            "font-size: 12px; font-weight: 600; color: #111827; margin: 0px; padding: 0px;"
+        )
         title_col.addWidget(self.university_label, alignment=Qt.AlignCenter)
         header_row.addLayout(title_col, stretch=5)
 
@@ -630,10 +639,25 @@ class DemoWindow(QWidget):
         text = str(self.demo_profile.get("university_text") or "").strip()
         return text or "University of Toronto"
 
-    def _title_authors_university_vertical_gap(self) -> int:
+    def _title_authors_vertical_gap(self) -> int:
         try:
             value = int(
-                self.demo_profile.get("title_authors_university_vertical_gap", 0)
+                self.demo_profile.get(
+                    "title_authors_vertical_gap",
+                    self.demo_profile.get("title_authors_university_vertical_gap", 0),
+                )
+            )
+        except (TypeError, ValueError):
+            value = 0
+        return max(0, value)
+
+    def _authors_university_vertical_gap(self) -> int:
+        try:
+            value = int(
+                self.demo_profile.get(
+                    "authors_university_vertical_gap",
+                    self.demo_profile.get("title_authors_university_vertical_gap", 0),
+                )
             )
         except (TypeError, ValueError):
             value = 0
