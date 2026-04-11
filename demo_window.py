@@ -375,12 +375,19 @@ class DemoWindow(QWidget):
         self.icassp_logo_image_label = QLabel(self)
         self.icassp_logo_image_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.icassp_logo_image_label.setFixedSize(180, 70)
+        self.icassp_logo_image_label.setContentsMargins(0, 0, 0, 0)
+        self.icassp_logo_image_label.setMargin(0)
+        self.icassp_logo_image_label.setIndent(0)
         self.icassp_logo_image_label.setStyleSheet("border: none;")
         self._update_icassp_logo()
         header_left_col.addWidget(self.icassp_logo_image_label)
 
         self.icassp_logo_label = QLabel(self._icassp_title_text(), self)
         self.icassp_logo_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.icassp_logo_label.setContentsMargins(0, 0, 0, 0)
+        self.icassp_logo_label.setMargin(0)
+        self.icassp_logo_label.setIndent(0)
+        self.icassp_logo_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
         self.icassp_logo_label.setStyleSheet(self._style_with_negative_gap(
             "font-size: 18px; font-weight: 700; color: #1e3a8a; margin: 0px; padding: 0px;",
             self._icassp_logo_text_vertical_gap(),
@@ -394,6 +401,9 @@ class DemoWindow(QWidget):
         self.title_label = QLabel(self._demo_title_text(), self)
         self.title_label.setAlignment(Qt.AlignCenter)
         self.title_label.setWordWrap(True)
+        self.title_label.setContentsMargins(0, 0, 0, 0)
+        self.title_label.setMargin(0)
+        self.title_label.setIndent(0)
         self.title_label.setStyleSheet(
             "font-size: 22px; font-weight: 700; color: #0b1f3a; margin: 0px; padding: 0px;"
         )
@@ -403,6 +413,10 @@ class DemoWindow(QWidget):
         self.authors_label = QLabel(self._authors_text(), self)
         self.authors_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.authors_label.setWordWrap(False)
+        self.authors_label.setContentsMargins(0, 0, 0, 0)
+        self.authors_label.setMargin(0)
+        self.authors_label.setIndent(0)
+        self.authors_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
         self.authors_label.setStyleSheet(self._style_with_negative_gap(
             "font-size: 12px; font-weight: 600; color: #111827; margin: 0px; padding: 0px;",
             self._title_authors_vertical_gap(),
@@ -413,6 +427,10 @@ class DemoWindow(QWidget):
         self.university_label = QLabel(self._university_text(), self)
         self.university_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.university_label.setWordWrap(False)
+        self.university_label.setContentsMargins(0, 0, 0, 0)
+        self.university_label.setMargin(0)
+        self.university_label.setIndent(0)
+        self.university_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
         self.university_label.setStyleSheet(self._style_with_negative_gap(
             "font-size: 12px; font-weight: 600; color: #111827; margin: 0px; padding: 0px;",
             self._authors_university_vertical_gap(),
@@ -705,6 +723,7 @@ class DemoWindow(QWidget):
         pixmap = QPixmap(logo_path) if logo_path and Path(logo_path).exists() else QPixmap()
 
         if pixmap.isNull():
+            self.icassp_logo_image_label.setFixedSize(180, 70)
             self.icassp_logo_image_label.setText("ICASSP Logo")
             self.icassp_logo_image_label.setStyleSheet(
                 "QLabel {border: 1px dashed #94a3b8; color: #475569; font-size: 11px;}"
@@ -718,6 +737,9 @@ class DemoWindow(QWidget):
                 Qt.SmoothTransformation,
             )
         )
+        scaled = self.icassp_logo_image_label.pixmap()
+        if scaled is not None and not scaled.isNull():
+            self.icassp_logo_image_label.setFixedSize(scaled.size())
         self.icassp_logo_image_label.setText("")
         self.icassp_logo_image_label.setStyleSheet("border: none;")
 
