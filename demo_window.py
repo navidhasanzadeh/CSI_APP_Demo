@@ -371,7 +371,7 @@ class DemoWindow(QWidget):
         header_row.setContentsMargins(0, 0, 0, 0)
         header_row.setSpacing(6)
         header_left_col = QVBoxLayout()
-        header_left_col.setSpacing(self._icassp_logo_text_vertical_gap())
+        header_left_col.setSpacing(max(0, self._icassp_logo_text_vertical_gap()))
         self.icassp_logo_image_label = QLabel(self)
         self.icassp_logo_image_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.icassp_logo_image_label.setFixedSize(180, 70)
@@ -381,7 +381,10 @@ class DemoWindow(QWidget):
 
         self.icassp_logo_label = QLabel(self._icassp_title_text(), self)
         self.icassp_logo_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.icassp_logo_label.setStyleSheet("font-size: 18px; font-weight: 700; color: #1e3a8a;")
+        self.icassp_logo_label.setStyleSheet(self._style_with_negative_gap(
+            "font-size: 18px; font-weight: 700; color: #1e3a8a; margin: 0px; padding: 0px;",
+            self._icassp_logo_text_vertical_gap(),
+        ))
         header_left_col.addWidget(self.icassp_logo_label)
         header_row.addLayout(header_left_col, stretch=2)
 
@@ -395,23 +398,25 @@ class DemoWindow(QWidget):
             "font-size: 22px; font-weight: 700; color: #0b1f3a; margin: 0px; padding: 0px;"
         )
         title_col.addWidget(self.title_label)
-        title_col.addSpacing(self._title_authors_vertical_gap())
+        title_col.addSpacing(max(0, self._title_authors_vertical_gap()))
 
         self.authors_label = QLabel(self._authors_text(), self)
         self.authors_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.authors_label.setWordWrap(False)
-        self.authors_label.setStyleSheet(
-            "font-size: 12px; font-weight: 600; color: #111827; margin: 0px; padding: 0px;"
-        )
+        self.authors_label.setStyleSheet(self._style_with_negative_gap(
+            "font-size: 12px; font-weight: 600; color: #111827; margin: 0px; padding: 0px;",
+            self._title_authors_vertical_gap(),
+        ))
         title_col.addWidget(self.authors_label, alignment=Qt.AlignCenter)
-        title_col.addSpacing(self._authors_university_vertical_gap())
+        title_col.addSpacing(max(0, self._authors_university_vertical_gap()))
 
         self.university_label = QLabel(self._university_text(), self)
         self.university_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.university_label.setWordWrap(False)
-        self.university_label.setStyleSheet(
-            "font-size: 12px; font-weight: 600; color: #111827; margin: 0px; padding: 0px;"
-        )
+        self.university_label.setStyleSheet(self._style_with_negative_gap(
+            "font-size: 12px; font-weight: 600; color: #111827; margin: 0px; padding: 0px;",
+            self._authors_university_vertical_gap(),
+        ))
         title_col.addWidget(self.university_label, alignment=Qt.AlignCenter)
         header_row.addLayout(title_col, stretch=5)
 
@@ -629,7 +634,14 @@ class DemoWindow(QWidget):
             value = int(self.demo_profile.get("icassp_logo_text_vertical_gap", 0))
         except (TypeError, ValueError):
             value = 0
-        return max(0, value)
+        return max(-80, min(80, value))
+
+
+    @staticmethod
+    def _style_with_negative_gap(base_style: str, gap: int) -> str:
+        if gap >= 0:
+            return base_style
+        return f"{base_style} margin-top: {gap}px;"
 
     def _authors_text(self) -> str:
         text = str(self.demo_profile.get("authors_text") or "").strip()
@@ -649,7 +661,7 @@ class DemoWindow(QWidget):
             )
         except (TypeError, ValueError):
             value = 0
-        return max(0, value)
+        return max(-80, min(80, value))
 
     def _authors_university_vertical_gap(self) -> int:
         try:
@@ -661,7 +673,7 @@ class DemoWindow(QWidget):
             )
         except (TypeError, ValueError):
             value = 0
-        return max(0, value)
+        return max(-80, min(80, value))
 
     def _start_clock_updates(self) -> None:
         self._clock_timer = QTimer(self)
