@@ -171,8 +171,8 @@ class DemoPlotCalculator:
         tx_num, tx_den = tx_pair
         ratio_chunks: list[np.ndarray] = []
         # max_subants = min(4, csi_data.shape[1] // 64)
-        max_subants = min(4, csi_data.shape[1] // 64)
-        # max_subants = 1
+        # max_subants = min(4, csi_data.shape[1] // 64)
+        max_subants = 1
         for subant in range(max_subants):
             csi_1 = csi_data[:, :, rx_idx, tx_num]
             csi_1_1 = csi_1[:, 64 * subant : 64 * (1 + subant)]
