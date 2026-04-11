@@ -442,7 +442,8 @@ class DemoWindow(QWidget):
         logo_col.setSpacing(1)
         logo_col.setAlignment(Qt.AlignRight | Qt.AlignTop)
         self.qr_placeholder = QLabel(self)
-        self.qr_placeholder.setFixedSize(160, 160)
+        qr_size = self._qr_image_size_px()
+        self.qr_placeholder.setFixedSize(qr_size, qr_size)
         self.qr_placeholder.setAlignment(Qt.AlignCenter)
         self.qr_placeholder.setFrameStyle(QFrame.Box | QFrame.Plain)
         self.qr_placeholder.setStyleSheet(
@@ -639,6 +640,13 @@ class DemoWindow(QWidget):
     def _qr_website_text(self) -> str:
         text = str(self.demo_profile.get("qr_website_url") or "").strip()
         return text or "https://dorf.navidhasanzadeh.com"
+
+    def _qr_image_size_px(self) -> int:
+        try:
+            value = int(self.demo_profile.get("qr_code_image_size_px", 160))
+        except (TypeError, ValueError):
+            value = 160
+        return max(80, min(600, value))
 
     def _icassp_logo_image_path(self) -> str:
         return str(self.demo_profile.get("icassp_logo_image_path") or "").strip()
