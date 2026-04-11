@@ -396,6 +396,7 @@ DEFAULT_DEMO_PROFILE = {
     "apply_hampel_to_ratio_phase": False,
     "demo_title_text": "Doppler Radiance Fields (DoRF) for Robust Wi-Fi Sensing and Human Activity Recognition",
     "qr_code_image_path": "",
+    "icassp_logo_image_path": "",
     "qr_website_url": "https://dorf.navidhasanzadeh.com",
     "icassp_title_text": "IEEE ICASSP 2026",
     "authors_text": "Authors: Navid Hasanzadeh, Shahrokh Valaee",
@@ -952,6 +953,10 @@ def _load_demo_profiles_from_csv():
                 profile["qr_code_image_path"] = (
                     row.get("qr_code_image_path")
                     or profile["qr_code_image_path"]
+                ).strip()
+                profile["icassp_logo_image_path"] = (
+                    row.get("icassp_logo_image_path")
+                    or profile["icassp_logo_image_path"]
                 ).strip()
                 profile["qr_website_url"] = (
                     row.get("qr_website_url")
@@ -1903,6 +1908,7 @@ def save_demo_profiles(profiles: dict):
                 "apply_hampel_to_ratio_phase",
                 "demo_title_text",
                 "qr_code_image_path",
+                "icassp_logo_image_path",
                 "qr_website_url",
                 "icassp_title_text",
                 "authors_text",
@@ -1968,6 +1974,12 @@ def save_demo_profiles(profiles: dict):
                             profile.get(
                                 "qr_code_image_path",
                                 DEFAULT_DEMO_PROFILE["qr_code_image_path"],
+                            )
+                        ).strip(),
+                        "icassp_logo_image_path": str(
+                            profile.get(
+                                "icassp_logo_image_path",
+                                DEFAULT_DEMO_PROFILE["icassp_logo_image_path"],
                             )
                         ).strip(),
                         "qr_website_url": (
@@ -4377,6 +4389,10 @@ class ConfigDialog(QDialog):
         self.txt_demo_qr_image_path.setPlaceholderText("/path/to/qr-code.png")
         form.addRow("QR image path:", self.txt_demo_qr_image_path)
 
+        self.txt_demo_icassp_logo_image_path = QLineEdit(self.grp_demo)
+        self.txt_demo_icassp_logo_image_path.setPlaceholderText("/path/to/icassp-logo.png")
+        form.addRow("ICASSP logo image path:", self.txt_demo_icassp_logo_image_path)
+
         self.txt_demo_qr_website = QLineEdit(self.grp_demo)
         self.txt_demo_qr_website.setPlaceholderText(DEFAULT_DEMO_PROFILE["qr_website_url"])
         form.addRow("QR website URL:", self.txt_demo_qr_website)
@@ -6615,6 +6631,15 @@ class ConfigDialog(QDialog):
                     )
                 )
             )
+        if hasattr(self, "txt_demo_icassp_logo_image_path"):
+            self.txt_demo_icassp_logo_image_path.setText(
+                str(
+                    profile.get(
+                        "icassp_logo_image_path",
+                        DEFAULT_DEMO_PROFILE["icassp_logo_image_path"],
+                    )
+                )
+            )
         if hasattr(self, "txt_demo_qr_website"):
             self.txt_demo_qr_website.setText(
                 str(
@@ -7718,6 +7743,10 @@ class ConfigDialog(QDialog):
             )
         if hasattr(self, "txt_demo_qr_image_path"):
             profile["qr_code_image_path"] = self.txt_demo_qr_image_path.text().strip()
+        if hasattr(self, "txt_demo_icassp_logo_image_path"):
+            profile["icassp_logo_image_path"] = (
+                self.txt_demo_icassp_logo_image_path.text().strip()
+            )
         if hasattr(self, "txt_demo_qr_website"):
             profile["qr_website_url"] = (
                 self.txt_demo_qr_website.text().strip()

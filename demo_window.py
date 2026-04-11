@@ -7,8 +7,6 @@ import time
 from datetime import datetime
 from pathlib import Path
 from math import ceil
-from urllib.error import URLError
-from urllib.request import urlopen
 
 import numpy as np
 from matplotlib.backends.backend_qt5agg import (
@@ -371,9 +369,9 @@ class DemoWindow(QWidget):
 
         header_row = QHBoxLayout()
         header_row.setContentsMargins(0, 0, 0, 0)
-        header_row.setSpacing(10)
+        header_row.setSpacing(6)
         header_left_col = QVBoxLayout()
-        header_left_col.setSpacing(1)
+        header_left_col.setSpacing(0)
         self.icassp_logo_image_label = QLabel(self)
         self.icassp_logo_image_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.icassp_logo_image_label.setFixedSize(180, 70)
@@ -388,7 +386,7 @@ class DemoWindow(QWidget):
         header_row.addLayout(header_left_col, stretch=2)
 
         title_col = QVBoxLayout()
-        title_col.setSpacing(2)
+        title_col.setSpacing(0)
         self.title_label = QLabel(self._demo_title_text(), self)
         self.title_label.setAlignment(Qt.AlignCenter)
         self.title_label.setWordWrap(True)
@@ -397,19 +395,19 @@ class DemoWindow(QWidget):
 
         self.authors_label = QLabel(self._authors_text(), self)
         self.authors_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.authors_label.setWordWrap(True)
+        self.authors_label.setWordWrap(False)
         self.authors_label.setStyleSheet("font-size: 12px; font-weight: 600; color: #111827;")
         title_col.addWidget(self.authors_label, alignment=Qt.AlignCenter)
 
         self.university_label = QLabel(self._university_text(), self)
         self.university_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.university_label.setWordWrap(True)
+        self.university_label.setWordWrap(False)
         self.university_label.setStyleSheet("font-size: 12px; font-weight: 600; color: #111827;")
         title_col.addWidget(self.university_label, alignment=Qt.AlignCenter)
-        header_row.addLayout(title_col, stretch=4)
+        header_row.addLayout(title_col, stretch=5)
 
         logo_col = QVBoxLayout()
-        logo_col.setSpacing(2)
+        logo_col.setSpacing(1)
         logo_col.setAlignment(Qt.AlignRight | Qt.AlignTop)
         self.qr_placeholder = QLabel(self)
         self.qr_placeholder.setFixedSize(160, 160)
@@ -610,6 +608,9 @@ class DemoWindow(QWidget):
         text = str(self.demo_profile.get("qr_website_url") or "").strip()
         return text or "https://dorf.navidhasanzadeh.com"
 
+    def _icassp_logo_image_path(self) -> str:
+        return str(self.demo_profile.get("icassp_logo_image_path") or "").strip()
+
     def _icassp_title_text(self) -> str:
         text = str(self.demo_profile.get("icassp_title_text") or "").strip()
         return text or "IEEE ICASSP 2026"
@@ -648,15 +649,8 @@ class DemoWindow(QWidget):
         self._refresh_metrics_status_bar()
 
     def _update_icassp_logo(self) -> None:
-        logo_url = (
-            "https://2026.ieeeicassp.org/wp-content/uploads/sites/4/2019/08/logo_ICASSP.png"
-        )
-        pixmap = QPixmap()
-        try:
-            with urlopen(logo_url, timeout=4) as response:
-                pixmap.loadFromData(response.read())
-        except (OSError, URLError, TimeoutError):
-            pixmap = QPixmap()
+        logo_path = self._icassp_logo_image_path()
+        pixmap = QPixmap(logo_path) if logo_path and Path(logo_path).exists() else QPixmap()
 
         if pixmap.isNull():
             self.icassp_logo_image_label.setText("ICASSP Logo")
@@ -673,6 +667,7 @@ class DemoWindow(QWidget):
             )
         )
         self.icassp_logo_image_label.setText("")
+        self.icassp_logo_image_label.setStyleSheet("border: none;")
 
     def _update_qr_placeholder(self) -> None:
         path = self._qr_image_path()
