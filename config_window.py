@@ -4465,7 +4465,7 @@ class ConfigDialog(QDialog):
         self.txt_demo_icassp_title.setPlaceholderText(DEFAULT_DEMO_PROFILE["icassp_title_text"])
         form.addRow("Top-left conference text:", self.txt_demo_icassp_title)
         self.spn_demo_icassp_logo_text_vertical_gap = QSpinBox(self.grp_demo)
-        self.spn_demo_icassp_logo_text_vertical_gap.setRange(0, 80)
+        self.spn_demo_icassp_logo_text_vertical_gap.setRange(-80, 80)
         self.spn_demo_icassp_logo_text_vertical_gap.setSuffix(" px")
         form.addRow(
             "Top-left logo/text vertical gap:",
@@ -4480,7 +4480,7 @@ class ConfigDialog(QDialog):
         self.txt_demo_university.setPlaceholderText(DEFAULT_DEMO_PROFILE["university_text"])
         form.addRow("University text:", self.txt_demo_university)
         self.spn_demo_title_authors_vertical_gap = QSpinBox(self.grp_demo)
-        self.spn_demo_title_authors_vertical_gap.setRange(0, 80)
+        self.spn_demo_title_authors_vertical_gap.setRange(-80, 80)
         self.spn_demo_title_authors_vertical_gap.setSuffix(" px")
         form.addRow(
             "Title → authors vertical gap:",
@@ -4488,7 +4488,7 @@ class ConfigDialog(QDialog):
         )
 
         self.spn_demo_authors_university_vertical_gap = QSpinBox(self.grp_demo)
-        self.spn_demo_authors_university_vertical_gap.setRange(0, 80)
+        self.spn_demo_authors_university_vertical_gap.setRange(-80, 80)
         self.spn_demo_authors_university_vertical_gap.setSuffix(" px")
         form.addRow(
             "Authors → university vertical gap:",
@@ -8315,7 +8315,6 @@ class ConfigDialog(QDialog):
         if result != QDialog.Accepted:
             return
 
-        self._show_start_progress(voice_profile)
         self.accept()
 
     def _show_start_progress(self, voice_profile: dict | None = None):
