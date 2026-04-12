@@ -126,6 +126,16 @@ DEFAULT_DORF_PLOT_ORDER = [
     "dorf_vmf_clusters",
 ]
 
+INFO_PANEL_TABS = [
+    ("info_tab_summary_title", "Summary"),
+    ("info_tab_problem_title", "Problem"),
+    ("info_tab_method_title", "Method"),
+    ("info_tab_dataset_title", "Dataset"),
+    ("info_tab_experiments_title", "Experiments"),
+    ("info_tab_results_title", "Results"),
+    ("info_tab_future_works_title", "Future Works"),
+]
+
 
 class CSICaptureGuidanceDialog(QDialog):
     start_capture_requested = pyqtSignal()
@@ -568,7 +578,20 @@ class DemoWindow(QWidget):
         info_header.addWidget(self.btn_toggle_info_panel)
         info_layout.addLayout(info_header)
 
-        self.info_video_placeholder = QFrame(self.info_panel)
+        self.info_tabs = QTabWidget(self.info_panel)
+        self.info_tabs.setStyleSheet(
+            "QTabWidget::pane {border: 1px solid #d1d5db; border-radius: 8px; background: #ffffff;}"
+            "QTabBar::tab {background: #e5e7eb; padding: 6px 10px; margin-right: 2px; border-top-left-radius: 6px; border-top-right-radius: 6px;}"
+            "QTabBar::tab:selected {background: #ffffff; font-weight: 700;}"
+        )
+        info_layout.addWidget(self.info_tabs, stretch=1)
+
+        summary_tab = QWidget(self.info_tabs)
+        summary_layout = QVBoxLayout(summary_tab)
+        summary_layout.setContentsMargins(8, 8, 8, 8)
+        summary_layout.setSpacing(8)
+
+        self.info_video_placeholder = QFrame(summary_tab)
         self.info_video_placeholder.setFrameShape(QFrame.StyledPanel)
         self.info_video_placeholder.setStyleSheet(
             "QFrame {border: 1px dashed #9ca3af; border-radius: 8px; background: #ffffff;}"
@@ -578,9 +601,9 @@ class DemoWindow(QWidget):
             QLabel("Video Placeholder", self.info_video_placeholder),
             alignment=Qt.AlignCenter,
         )
-        info_layout.addWidget(self.info_video_placeholder, stretch=2)
+        summary_layout.addWidget(self.info_video_placeholder, stretch=2)
 
-        self.info_image_placeholder = QFrame(self.info_panel)
+        self.info_image_placeholder = QFrame(summary_tab)
         self.info_image_placeholder.setFrameShape(QFrame.StyledPanel)
         self.info_image_placeholder.setStyleSheet(
             "QFrame {border: 1px dashed #9ca3af; border-radius: 8px; background: #ffffff;}"
@@ -590,9 +613,9 @@ class DemoWindow(QWidget):
             QLabel("Image Placeholder", self.info_image_placeholder),
             alignment=Qt.AlignCenter,
         )
-        info_layout.addWidget(self.info_image_placeholder, stretch=2)
+        summary_layout.addWidget(self.info_image_placeholder, stretch=2)
 
-        self.info_pdf_placeholder = QFrame(self.info_panel)
+        self.info_pdf_placeholder = QFrame(summary_tab)
         self.info_pdf_placeholder.setFrameShape(QFrame.StyledPanel)
         self.info_pdf_placeholder.setStyleSheet(
             "QFrame {border: 1px dashed #9ca3af; border-radius: 8px; background: #ffffff;}"
@@ -602,7 +625,24 @@ class DemoWindow(QWidget):
             QLabel("PDF Frame Placeholder", self.info_pdf_placeholder),
             alignment=Qt.AlignCenter,
         )
-        info_layout.addWidget(self.info_pdf_placeholder, stretch=3)
+        summary_layout.addWidget(self.info_pdf_placeholder, stretch=3)
+
+        self.info_tabs.addTab(
+            summary_tab, self._info_tab_title("info_tab_summary_title", "Summary")
+        )
+
+        for key, default_title in INFO_PANEL_TABS[1:]:
+            tab = QWidget(self.info_tabs)
+            tab_layout = QVBoxLayout(tab)
+            tab_layout.setContentsMargins(12, 12, 12, 12)
+            tab_layout.setSpacing(6)
+            message = QLabel("No content configured for this section yet.", tab)
+            message.setWordWrap(True)
+            message.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+            message.setStyleSheet("font-size: 12px; color: #334155;")
+            tab_layout.addWidget(message)
+            tab_layout.addStretch(1)
+            self.info_tabs.addTab(tab, self._info_tab_title(key, default_title))
 
         self.demo_splitter = QSplitter(Qt.Horizontal, self)
         self.demo_splitter.setChildrenCollapsible(True)
@@ -742,6 +782,10 @@ class DemoWindow(QWidget):
             or self.demo_profile.get("qr_code_image_path")
             or ""
         ).strip()
+
+    def _info_tab_title(self, profile_key: str, default_title: str) -> str:
+        text = str(self.demo_profile.get(profile_key) or "").strip()
+        return text or default_title
 
     def _website_url_text(self) -> str:
         text = str(

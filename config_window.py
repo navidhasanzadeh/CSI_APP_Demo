@@ -416,6 +416,13 @@ DEFAULT_DEMO_PROFILE = {
     "capture_guidance_video_left_path": "videos/right_left.mp4",
     "capture_guidance_video_right_label": "Up/Down",
     "capture_guidance_video_right_path": "videos/up_down.mp4",
+    "info_tab_summary_title": "Summary",
+    "info_tab_problem_title": "Problem",
+    "info_tab_method_title": "Method",
+    "info_tab_dataset_title": "Dataset",
+    "info_tab_experiments_title": "Experiments",
+    "info_tab_results_title": "Results",
+    "info_tab_future_works_title": "Future Works",
     "activity_class_names": [],
     "subplot_settings": {
         "csi_ratio_magnitude": {"visible": True, "title": "CSI Ratio Magnitude", "xlabel": "Time (s)", "ylabel": "|Ratio|", "info": "Shows CSI magnitude ratio between two TX antennas."},
@@ -1121,6 +1128,34 @@ def _load_demo_profiles_from_csv():
                     row.get("capture_guidance_video_right_path")
                     or profile["capture_guidance_video_right_path"]
                 ).strip()
+                profile["info_tab_summary_title"] = (
+                    row.get("info_tab_summary_title")
+                    or profile["info_tab_summary_title"]
+                ).strip() or DEFAULT_DEMO_PROFILE["info_tab_summary_title"]
+                profile["info_tab_problem_title"] = (
+                    row.get("info_tab_problem_title")
+                    or profile["info_tab_problem_title"]
+                ).strip() or DEFAULT_DEMO_PROFILE["info_tab_problem_title"]
+                profile["info_tab_method_title"] = (
+                    row.get("info_tab_method_title")
+                    or profile["info_tab_method_title"]
+                ).strip() or DEFAULT_DEMO_PROFILE["info_tab_method_title"]
+                profile["info_tab_dataset_title"] = (
+                    row.get("info_tab_dataset_title")
+                    or profile["info_tab_dataset_title"]
+                ).strip() or DEFAULT_DEMO_PROFILE["info_tab_dataset_title"]
+                profile["info_tab_experiments_title"] = (
+                    row.get("info_tab_experiments_title")
+                    or profile["info_tab_experiments_title"]
+                ).strip() or DEFAULT_DEMO_PROFILE["info_tab_experiments_title"]
+                profile["info_tab_results_title"] = (
+                    row.get("info_tab_results_title")
+                    or profile["info_tab_results_title"]
+                ).strip() or DEFAULT_DEMO_PROFILE["info_tab_results_title"]
+                profile["info_tab_future_works_title"] = (
+                    row.get("info_tab_future_works_title")
+                    or profile["info_tab_future_works_title"]
+                ).strip() or DEFAULT_DEMO_PROFILE["info_tab_future_works_title"]
                 class_names_text = (row.get("activity_class_names") or "").strip()
                 if class_names_text:
                     profile["activity_class_names"] = [
@@ -2051,6 +2086,13 @@ def save_demo_profiles(profiles: dict):
                 "capture_guidance_video_left_path",
                 "capture_guidance_video_right_label",
                 "capture_guidance_video_right_path",
+                "info_tab_summary_title",
+                "info_tab_problem_title",
+                "info_tab_method_title",
+                "info_tab_dataset_title",
+                "info_tab_experiments_title",
+                "info_tab_results_title",
+                "info_tab_future_works_title",
                 "activity_class_names",
                 "subplot_settings_json",
                 "dorf_plot_order",
@@ -2280,6 +2322,69 @@ def save_demo_profiles(profiles: dict):
                                 DEFAULT_DEMO_PROFILE["capture_guidance_video_right_path"],
                             )
                         ).strip(),
+                        "info_tab_summary_title": (
+                            str(
+                                profile.get(
+                                    "info_tab_summary_title",
+                                    DEFAULT_DEMO_PROFILE["info_tab_summary_title"],
+                                )
+                            ).strip()
+                            or DEFAULT_DEMO_PROFILE["info_tab_summary_title"]
+                        ),
+                        "info_tab_problem_title": (
+                            str(
+                                profile.get(
+                                    "info_tab_problem_title",
+                                    DEFAULT_DEMO_PROFILE["info_tab_problem_title"],
+                                )
+                            ).strip()
+                            or DEFAULT_DEMO_PROFILE["info_tab_problem_title"]
+                        ),
+                        "info_tab_method_title": (
+                            str(
+                                profile.get(
+                                    "info_tab_method_title",
+                                    DEFAULT_DEMO_PROFILE["info_tab_method_title"],
+                                )
+                            ).strip()
+                            or DEFAULT_DEMO_PROFILE["info_tab_method_title"]
+                        ),
+                        "info_tab_dataset_title": (
+                            str(
+                                profile.get(
+                                    "info_tab_dataset_title",
+                                    DEFAULT_DEMO_PROFILE["info_tab_dataset_title"],
+                                )
+                            ).strip()
+                            or DEFAULT_DEMO_PROFILE["info_tab_dataset_title"]
+                        ),
+                        "info_tab_experiments_title": (
+                            str(
+                                profile.get(
+                                    "info_tab_experiments_title",
+                                    DEFAULT_DEMO_PROFILE["info_tab_experiments_title"],
+                                )
+                            ).strip()
+                            or DEFAULT_DEMO_PROFILE["info_tab_experiments_title"]
+                        ),
+                        "info_tab_results_title": (
+                            str(
+                                profile.get(
+                                    "info_tab_results_title",
+                                    DEFAULT_DEMO_PROFILE["info_tab_results_title"],
+                                )
+                            ).strip()
+                            or DEFAULT_DEMO_PROFILE["info_tab_results_title"]
+                        ),
+                        "info_tab_future_works_title": (
+                            str(
+                                profile.get(
+                                    "info_tab_future_works_title",
+                                    DEFAULT_DEMO_PROFILE["info_tab_future_works_title"],
+                                )
+                            ).strip()
+                            or DEFAULT_DEMO_PROFILE["info_tab_future_works_title"]
+                        ),
                         "activity_class_names": ",".join(
                             str(item).strip()
                             for item in profile.get(
@@ -4713,6 +4818,51 @@ class ConfigDialog(QDialog):
         )
         form.addRow("Guidance right video path:", self.txt_demo_capture_guidance_right_path)
 
+        self.txt_demo_info_tab_summary_title = QLineEdit(self.grp_demo)
+        self.txt_demo_info_tab_summary_title.setPlaceholderText(
+            DEFAULT_DEMO_PROFILE["info_tab_summary_title"]
+        )
+        form.addRow("Info tab title - Summary:", self.txt_demo_info_tab_summary_title)
+
+        self.txt_demo_info_tab_problem_title = QLineEdit(self.grp_demo)
+        self.txt_demo_info_tab_problem_title.setPlaceholderText(
+            DEFAULT_DEMO_PROFILE["info_tab_problem_title"]
+        )
+        form.addRow("Info tab title - Problem:", self.txt_demo_info_tab_problem_title)
+
+        self.txt_demo_info_tab_method_title = QLineEdit(self.grp_demo)
+        self.txt_demo_info_tab_method_title.setPlaceholderText(
+            DEFAULT_DEMO_PROFILE["info_tab_method_title"]
+        )
+        form.addRow("Info tab title - Method:", self.txt_demo_info_tab_method_title)
+
+        self.txt_demo_info_tab_dataset_title = QLineEdit(self.grp_demo)
+        self.txt_demo_info_tab_dataset_title.setPlaceholderText(
+            DEFAULT_DEMO_PROFILE["info_tab_dataset_title"]
+        )
+        form.addRow("Info tab title - Dataset:", self.txt_demo_info_tab_dataset_title)
+
+        self.txt_demo_info_tab_experiments_title = QLineEdit(self.grp_demo)
+        self.txt_demo_info_tab_experiments_title.setPlaceholderText(
+            DEFAULT_DEMO_PROFILE["info_tab_experiments_title"]
+        )
+        form.addRow("Info tab title - Experiments:", self.txt_demo_info_tab_experiments_title)
+
+        self.txt_demo_info_tab_results_title = QLineEdit(self.grp_demo)
+        self.txt_demo_info_tab_results_title.setPlaceholderText(
+            DEFAULT_DEMO_PROFILE["info_tab_results_title"]
+        )
+        form.addRow("Info tab title - Results:", self.txt_demo_info_tab_results_title)
+
+        self.txt_demo_info_tab_future_works_title = QLineEdit(self.grp_demo)
+        self.txt_demo_info_tab_future_works_title.setPlaceholderText(
+            DEFAULT_DEMO_PROFILE["info_tab_future_works_title"]
+        )
+        form.addRow(
+            "Info tab title - Future Works:",
+            self.txt_demo_info_tab_future_works_title,
+        )
+
         self.txt_demo_activity_class_names = QLineEdit(self.grp_demo)
         self.txt_demo_activity_class_names.setPlaceholderText(
             "Class 1 name, Class 2 name, Class 3 name"
@@ -7121,6 +7271,69 @@ class ConfigDialog(QDialog):
                     )
                 )
             )
+        if hasattr(self, "txt_demo_info_tab_summary_title"):
+            self.txt_demo_info_tab_summary_title.setText(
+                str(
+                    profile.get(
+                        "info_tab_summary_title",
+                        DEFAULT_DEMO_PROFILE["info_tab_summary_title"],
+                    )
+                )
+            )
+        if hasattr(self, "txt_demo_info_tab_problem_title"):
+            self.txt_demo_info_tab_problem_title.setText(
+                str(
+                    profile.get(
+                        "info_tab_problem_title",
+                        DEFAULT_DEMO_PROFILE["info_tab_problem_title"],
+                    )
+                )
+            )
+        if hasattr(self, "txt_demo_info_tab_method_title"):
+            self.txt_demo_info_tab_method_title.setText(
+                str(
+                    profile.get(
+                        "info_tab_method_title",
+                        DEFAULT_DEMO_PROFILE["info_tab_method_title"],
+                    )
+                )
+            )
+        if hasattr(self, "txt_demo_info_tab_dataset_title"):
+            self.txt_demo_info_tab_dataset_title.setText(
+                str(
+                    profile.get(
+                        "info_tab_dataset_title",
+                        DEFAULT_DEMO_PROFILE["info_tab_dataset_title"],
+                    )
+                )
+            )
+        if hasattr(self, "txt_demo_info_tab_experiments_title"):
+            self.txt_demo_info_tab_experiments_title.setText(
+                str(
+                    profile.get(
+                        "info_tab_experiments_title",
+                        DEFAULT_DEMO_PROFILE["info_tab_experiments_title"],
+                    )
+                )
+            )
+        if hasattr(self, "txt_demo_info_tab_results_title"):
+            self.txt_demo_info_tab_results_title.setText(
+                str(
+                    profile.get(
+                        "info_tab_results_title",
+                        DEFAULT_DEMO_PROFILE["info_tab_results_title"],
+                    )
+                )
+            )
+        if hasattr(self, "txt_demo_info_tab_future_works_title"):
+            self.txt_demo_info_tab_future_works_title.setText(
+                str(
+                    profile.get(
+                        "info_tab_future_works_title",
+                        DEFAULT_DEMO_PROFILE["info_tab_future_works_title"],
+                    )
+                )
+            )
         if hasattr(self, "txt_demo_activity_class_names"):
             activity_class_names = profile.get(
                 "activity_class_names",
@@ -8207,6 +8420,41 @@ class ConfigDialog(QDialog):
         if hasattr(self, "txt_demo_capture_guidance_right_path"):
             profile["capture_guidance_video_right_path"] = (
                 self.txt_demo_capture_guidance_right_path.text().strip()
+            )
+        if hasattr(self, "txt_demo_info_tab_summary_title"):
+            profile["info_tab_summary_title"] = (
+                self.txt_demo_info_tab_summary_title.text().strip()
+                or DEFAULT_DEMO_PROFILE["info_tab_summary_title"]
+            )
+        if hasattr(self, "txt_demo_info_tab_problem_title"):
+            profile["info_tab_problem_title"] = (
+                self.txt_demo_info_tab_problem_title.text().strip()
+                or DEFAULT_DEMO_PROFILE["info_tab_problem_title"]
+            )
+        if hasattr(self, "txt_demo_info_tab_method_title"):
+            profile["info_tab_method_title"] = (
+                self.txt_demo_info_tab_method_title.text().strip()
+                or DEFAULT_DEMO_PROFILE["info_tab_method_title"]
+            )
+        if hasattr(self, "txt_demo_info_tab_dataset_title"):
+            profile["info_tab_dataset_title"] = (
+                self.txt_demo_info_tab_dataset_title.text().strip()
+                or DEFAULT_DEMO_PROFILE["info_tab_dataset_title"]
+            )
+        if hasattr(self, "txt_demo_info_tab_experiments_title"):
+            profile["info_tab_experiments_title"] = (
+                self.txt_demo_info_tab_experiments_title.text().strip()
+                or DEFAULT_DEMO_PROFILE["info_tab_experiments_title"]
+            )
+        if hasattr(self, "txt_demo_info_tab_results_title"):
+            profile["info_tab_results_title"] = (
+                self.txt_demo_info_tab_results_title.text().strip()
+                or DEFAULT_DEMO_PROFILE["info_tab_results_title"]
+            )
+        if hasattr(self, "txt_demo_info_tab_future_works_title"):
+            profile["info_tab_future_works_title"] = (
+                self.txt_demo_info_tab_future_works_title.text().strip()
+                or DEFAULT_DEMO_PROFILE["info_tab_future_works_title"]
             )
         if hasattr(self, "txt_demo_activity_class_names"):
             class_names_text = self.txt_demo_activity_class_names.text().strip()
