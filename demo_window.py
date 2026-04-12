@@ -644,10 +644,51 @@ class DemoWindow(QWidget):
             tab_layout.addStretch(1)
             self.info_tabs.addTab(tab, self._info_tab_title(key, default_title))
 
+        self.demo_panel = QFrame(self)
+        self.demo_panel.setFrameShape(QFrame.StyledPanel)
+        self.demo_panel.setStyleSheet(
+            "QFrame {border: 1px solid #cfd8e3; border-radius: 10px; background: #ffffff;}"
+        )
+        demo_panel_layout = QVBoxLayout(self.demo_panel)
+        demo_panel_layout.setContentsMargins(8, 8, 8, 8)
+        demo_panel_layout.setSpacing(8)
+
+        demo_header = QHBoxLayout()
+        demo_title = QLabel("CSI Demo Panel", self.demo_panel)
+        demo_title.setStyleSheet("font-size: 14px; font-weight: 700; color: #1f2937; border: none;")
+        demo_header.addWidget(demo_title)
+        demo_header.addStretch(1)
+        demo_panel_layout.addLayout(demo_header)
+        demo_panel_layout.addWidget(self.demo_tabs, stretch=1)
+
+        demo_controls_row = QHBoxLayout()
+        demo_controls_row.setContentsMargins(0, 0, 0, 0)
+        demo_controls_row.setSpacing(8)
+        self.btn_capture = QPushButton("CSI Capture", self.demo_panel)
+        self.btn_capture.clicked.connect(self._on_capture_clicked)
+        self.btn_capture.setStyleSheet(
+            "QPushButton {background-color: #16a34a; color: white; font-size: 14px; font-weight: 700; "
+            "padding: 6px 12px; border-radius: 8px;}"
+            "QPushButton:hover {background-color: #15803d;}"
+            "QPushButton:disabled {background-color: #86efac; color: #f8fafc;}"
+        )
+        demo_controls_row.addWidget(self.btn_capture)
+
+        self.btn_close = QPushButton("Close Window", self.demo_panel)
+        self.btn_close.clicked.connect(self.close)
+        self.btn_close.setStyleSheet(
+            "QPushButton {background-color: #2563eb; color: white; font-size: 13px; font-weight: 600; "
+            "padding: 6px 12px; border-radius: 8px;}"
+            "QPushButton:hover {background-color: #1d4ed8;}"
+        )
+        demo_controls_row.addWidget(self.btn_close)
+        demo_controls_row.addStretch(1)
+        demo_panel_layout.addLayout(demo_controls_row)
+
         self.demo_splitter = QSplitter(Qt.Horizontal, self)
         self.demo_splitter.setChildrenCollapsible(True)
         self.demo_splitter.addWidget(self.info_panel)
-        self.demo_splitter.addWidget(self.demo_tabs)
+        self.demo_splitter.addWidget(self.demo_panel)
         self.demo_splitter.setStretchFactor(0, 1)
         self.demo_splitter.setStretchFactor(1, 4)
         self.demo_splitter.setSizes([self._info_panel_last_width, 980])
@@ -662,29 +703,6 @@ class DemoWindow(QWidget):
         bottom_row = QVBoxLayout()
         bottom_row.setContentsMargins(0, 0, 0, 0)
         bottom_row.setSpacing(6)
-        button_row = QHBoxLayout()
-        button_row.setContentsMargins(0, 0, 0, 0)
-        button_row.setSpacing(8)
-        self.btn_capture = QPushButton("CSI Capture", self)
-        self.btn_capture.clicked.connect(self._on_capture_clicked)
-        self.btn_capture.setStyleSheet(
-            "QPushButton {background-color: #16a34a; color: white; font-size: 14px; font-weight: 700; "
-            "padding: 6px 12px; border-radius: 8px;}"
-            "QPushButton:hover {background-color: #15803d;}"
-            "QPushButton:disabled {background-color: #86efac; color: #f8fafc;}"
-        )
-        button_row.addWidget(self.btn_capture)
-
-        self.btn_close = QPushButton("Close Window", self)
-        self.btn_close.clicked.connect(self.close)
-        self.btn_close.setStyleSheet(
-            "QPushButton {background-color: #2563eb; color: white; font-size: 13px; font-weight: 600; "
-            "padding: 6px 12px; border-radius: 8px;}"
-            "QPushButton:hover {background-color: #1d4ed8;}"
-        )
-        button_row.addWidget(self.btn_close)
-        button_row.addStretch(1)
-        bottom_row.addLayout(button_row)
         metrics_row = QHBoxLayout()
         metrics_row.setContentsMargins(0, 0, 0, 0)
         metrics_row.setSpacing(8)
