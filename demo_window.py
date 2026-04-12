@@ -37,6 +37,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
     QTabWidget,
+    QSplitter,
 )
 from PyQt5.QtCore import Qt, QTimer, QUrl
 
@@ -539,7 +540,80 @@ class DemoWindow(QWidget):
         self.demo_tabs.currentChanged.connect(self._on_demo_tab_changed)
 
         content_row = QHBoxLayout()
-        content_row.addWidget(self.demo_tabs, stretch=4)
+        self._info_panel_last_width = 320
+        self._info_panel_collapsed = False
+
+        self.info_panel = QFrame(self)
+        self.info_panel.setFrameShape(QFrame.StyledPanel)
+        self.info_panel.setStyleSheet(
+            "QFrame {border: 1px solid #cfd8e3; border-radius: 10px; background: #f8fafc;}"
+        )
+        info_layout = QVBoxLayout(self.info_panel)
+        info_layout.setContentsMargins(8, 8, 8, 8)
+        info_layout.setSpacing(8)
+
+        info_header = QHBoxLayout()
+        info_title = QLabel("Information Panel", self.info_panel)
+        info_title.setStyleSheet("font-size: 14px; font-weight: 700; color: #1f2937; border: none;")
+        info_header.addWidget(info_title)
+        info_header.addStretch(1)
+        self.btn_toggle_info_panel = QPushButton("◀", self.info_panel)
+        self.btn_toggle_info_panel.setFixedSize(28, 24)
+        self.btn_toggle_info_panel.setToolTip("Minimize/Restore information panel")
+        self.btn_toggle_info_panel.clicked.connect(self._toggle_information_panel)
+        self.btn_toggle_info_panel.setStyleSheet(
+            "QPushButton {background-color: #e5e7eb; color: #111827; font-weight: 700; border-radius: 6px;}"
+            "QPushButton:hover {background-color: #d1d5db;}"
+        )
+        info_header.addWidget(self.btn_toggle_info_panel)
+        info_layout.addLayout(info_header)
+
+        self.info_video_placeholder = QFrame(self.info_panel)
+        self.info_video_placeholder.setFrameShape(QFrame.StyledPanel)
+        self.info_video_placeholder.setStyleSheet(
+            "QFrame {border: 1px dashed #9ca3af; border-radius: 8px; background: #ffffff;}"
+        )
+        video_placeholder_layout = QVBoxLayout(self.info_video_placeholder)
+        video_placeholder_layout.addWidget(
+            QLabel("Video Placeholder", self.info_video_placeholder),
+            alignment=Qt.AlignCenter,
+        )
+        info_layout.addWidget(self.info_video_placeholder, stretch=2)
+
+        self.info_image_placeholder = QFrame(self.info_panel)
+        self.info_image_placeholder.setFrameShape(QFrame.StyledPanel)
+        self.info_image_placeholder.setStyleSheet(
+            "QFrame {border: 1px dashed #9ca3af; border-radius: 8px; background: #ffffff;}"
+        )
+        image_placeholder_layout = QVBoxLayout(self.info_image_placeholder)
+        image_placeholder_layout.addWidget(
+            QLabel("Image Placeholder", self.info_image_placeholder),
+            alignment=Qt.AlignCenter,
+        )
+        info_layout.addWidget(self.info_image_placeholder, stretch=2)
+
+        self.info_pdf_placeholder = QFrame(self.info_panel)
+        self.info_pdf_placeholder.setFrameShape(QFrame.StyledPanel)
+        self.info_pdf_placeholder.setStyleSheet(
+            "QFrame {border: 1px dashed #9ca3af; border-radius: 8px; background: #ffffff;}"
+        )
+        pdf_placeholder_layout = QVBoxLayout(self.info_pdf_placeholder)
+        pdf_placeholder_layout.addWidget(
+            QLabel("PDF Frame Placeholder", self.info_pdf_placeholder),
+            alignment=Qt.AlignCenter,
+        )
+        info_layout.addWidget(self.info_pdf_placeholder, stretch=3)
+
+        self.demo_splitter = QSplitter(Qt.Horizontal, self)
+        self.demo_splitter.setChildrenCollapsible(True)
+        self.demo_splitter.addWidget(self.info_panel)
+        self.demo_splitter.addWidget(self.demo_tabs)
+        self.demo_splitter.setStretchFactor(0, 1)
+        self.demo_splitter.setStretchFactor(1, 4)
+        self.demo_splitter.setSizes([self._info_panel_last_width, 980])
+        self.demo_splitter.splitterMoved.connect(self._on_demo_splitter_moved)
+
+        content_row.addWidget(self.demo_splitter, stretch=1)
         root.addLayout(content_row, stretch=1)
         self.packet_count_value = "0"
         self.sampling_rate_value = "0.00 pkt/s"
@@ -610,6 +684,29 @@ class DemoWindow(QWidget):
 
     def _on_demo_tab_changed(self, tab_idx: int) -> None:
         self._refresh_active_plot_canvas(tab_idx)
+
+    def _toggle_information_panel(self) -> None:
+        sizes = self.demo_splitter.sizes()
+        if not self._info_panel_collapsed and sizes and sizes[0] > 0:
+            self._info_panel_last_width = sizes[0]
+        self._info_panel_collapsed = not self._info_panel_collapsed
+        if self._info_panel_collapsed:
+            self.demo_splitter.setSizes([0, max(1, sum(sizes))])
+            self.btn_toggle_info_panel.setText("▶")
+        else:
+            total = max(1, sum(sizes))
+            info_width = min(self._info_panel_last_width, max(1, total - 1))
+            self.demo_splitter.setSizes([info_width, max(1, total - info_width)])
+            self.btn_toggle_info_panel.setText("◀")
+
+    def _on_demo_splitter_moved(self, pos: int, index: int) -> None:
+        _ = (pos, index)
+        sizes = self.demo_splitter.sizes()
+        if sizes and sizes[0] > 0:
+            self._info_panel_last_width = sizes[0]
+            if self._info_panel_collapsed:
+                self._info_panel_collapsed = False
+                self.btn_toggle_info_panel.setText("◀")
 
     def _refresh_active_plot_canvas(self, tab_idx: int) -> None:
         """Reflow and redraw the active plot after tab switches/window resizing."""
