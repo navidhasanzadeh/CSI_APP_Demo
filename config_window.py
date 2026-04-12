@@ -4577,7 +4577,7 @@ class ConfigDialog(QDialog):
         self.spn_demo_university_logo_image_size.setRange(80, 600)
         self.spn_demo_university_logo_image_size.setSuffix(" px")
         self.spn_demo_university_logo_image_size.setSingleStep(10)
-        form.addRow("University logo image size:", self.spn_demo_university_logo_image_size)
+        form.addRow("University logo image height:", self.spn_demo_university_logo_image_size)
 
         self.txt_demo_icassp_logo_image_path = QLineEdit(self.grp_demo)
         self.txt_demo_icassp_logo_image_path.setPlaceholderText("/path/to/icassp-logo.png")
