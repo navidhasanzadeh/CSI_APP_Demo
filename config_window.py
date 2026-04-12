@@ -402,6 +402,7 @@ DEFAULT_DEMO_PROFILE = {
     "icassp_title_text": "IEEE ICASSP 2026",
     "icassp_logo_text_vertical_gap": 0,
     "demo_title_font_size_px": 22,
+    "demo_title_max_width_px": 0,
     "authors_text": "Authors: Navid Hasanzadeh, Shahrokh Valaee",
     "authors_font_size_px": 12,
     "university_text": "University of Toronto",
@@ -1002,6 +1003,21 @@ def _load_demo_profiles_from_csv():
                                 row.get(
                                     "demo_title_font_size_px",
                                     profile["demo_title_font_size_px"],
+                                )
+                            ),
+                        ),
+                    )
+                except (TypeError, ValueError):
+                    pass
+                try:
+                    profile["demo_title_max_width_px"] = max(
+                        0,
+                        min(
+                            4000,
+                            int(
+                                row.get(
+                                    "demo_title_max_width_px",
+                                    profile.get("demo_title_max_width_px", 0),
                                 )
                             ),
                         ),
@@ -2021,6 +2037,7 @@ def save_demo_profiles(profiles: dict):
                 "icassp_title_text",
                 "icassp_logo_text_vertical_gap",
                 "demo_title_font_size_px",
+                "demo_title_max_width_px",
                 "authors_text",
                 "authors_font_size_px",
                 "university_text",
@@ -2140,6 +2157,18 @@ def save_demo_profiles(profiles: dict):
                                     profile.get(
                                         "demo_title_font_size_px",
                                         DEFAULT_DEMO_PROFILE["demo_title_font_size_px"],
+                                    )
+                                ),
+                            ),
+                        ),
+                        "demo_title_max_width_px": max(
+                            0,
+                            min(
+                                4000,
+                                int(
+                                    profile.get(
+                                        "demo_title_max_width_px",
+                                        DEFAULT_DEMO_PROFILE["demo_title_max_width_px"],
                                     )
                                 ),
                             ),
@@ -4608,6 +4637,11 @@ class ConfigDialog(QDialog):
         self.spn_demo_title_font_size.setRange(10, 96)
         self.spn_demo_title_font_size.setSuffix(" px")
         form.addRow("Title font size:", self.spn_demo_title_font_size)
+        self.spn_demo_title_max_width = QSpinBox(self.grp_demo)
+        self.spn_demo_title_max_width.setRange(0, 4000)
+        self.spn_demo_title_max_width.setSuffix(" px")
+        self.spn_demo_title_max_width.setSpecialValueText("Auto")
+        form.addRow("Title max width:", self.spn_demo_title_max_width)
 
         self.txt_demo_authors = QLineEdit(self.grp_demo)
         self.txt_demo_authors.setPlaceholderText(DEFAULT_DEMO_PROFILE["authors_text"])
@@ -6943,6 +6977,21 @@ class ConfigDialog(QDialog):
                     ),
                 )
             )
+        if hasattr(self, "spn_demo_title_max_width"):
+            self.spn_demo_title_max_width.setValue(
+                max(
+                    0,
+                    min(
+                        4000,
+                        int(
+                            profile.get(
+                                "demo_title_max_width_px",
+                                DEFAULT_DEMO_PROFILE["demo_title_max_width_px"],
+                            )
+                        ),
+                    ),
+                )
+            )
         if hasattr(self, "txt_demo_authors"):
             self.txt_demo_authors.setText(
                 str(
@@ -8108,6 +8157,8 @@ class ConfigDialog(QDialog):
             )
         if hasattr(self, "spn_demo_title_font_size"):
             profile["demo_title_font_size_px"] = int(self.spn_demo_title_font_size.value())
+        if hasattr(self, "spn_demo_title_max_width"):
+            profile["demo_title_max_width_px"] = int(self.spn_demo_title_max_width.value())
         if hasattr(self, "txt_demo_authors"):
             profile["authors_text"] = (
                 self.txt_demo_authors.text().strip()

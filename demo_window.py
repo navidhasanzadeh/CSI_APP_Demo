@@ -360,6 +360,7 @@ class DemoWindow(QWidget):
         self.transfer_progress_updated.connect(self._on_transfer_progress_updated)
         self.capture_ui_finished.connect(self._on_capture_ui_finished)
         self.synthetic_ratio_ready.connect(self._on_synthetic_ratio_ready)
+        self.status_message = "Ready for demo capture."
         self._build_ui()
 
     def _build_ui(self):
@@ -412,6 +413,9 @@ class DemoWindow(QWidget):
             f"font-size: {self._demo_title_font_size_px()}px; font-weight: 700; "
             "color: #0b1f3a; margin: 0px; padding: 0px;"
         )
+        title_max_width = self._demo_title_max_width_px()
+        if title_max_width > 0:
+            self.title_label.setFixedWidth(title_max_width)
         title_col.addWidget(self.title_label)
         title_col.addSpacing(max(0, self._title_authors_vertical_gap()))
 
@@ -470,10 +474,6 @@ class DemoWindow(QWidget):
         header_row.setColumnStretch(1, 0)
         header_row.setColumnStretch(2, 1)
         root.addLayout(header_row)
-
-        self.status_label = QLabel("Ready for demo capture.", self)
-        self.status_label.setStyleSheet("font-size: 12px; color: #1f2937;")
-        root.addWidget(self.status_label)
 
         self.figure = Figure(figsize=(10, 6), dpi=100)
         self.canvas = FigureCanvas(self.figure)
@@ -676,6 +676,13 @@ class DemoWindow(QWidget):
             value = 22
         return max(10, min(96, value))
 
+    def _demo_title_max_width_px(self) -> int:
+        try:
+            value = int(self.demo_profile.get("demo_title_max_width_px", 0))
+        except (TypeError, ValueError):
+            value = 0
+        return max(0, min(4000, value))
+
     def _authors_font_size_px(self) -> int:
         try:
             value = int(self.demo_profile.get("authors_font_size_px", 12))
@@ -756,10 +763,15 @@ class DemoWindow(QWidget):
 
     def _refresh_metrics_status_bar(self) -> None:
         self.metrics_status_bar.setText(
+            f"Status: {self.status_message}    |    "
             f"Received packets: {self.packet_count_value}    |    "
             f"Sampling rate: {self.sampling_rate_value}    |    "
             f"Current date & time: {self.datetime_value}"
         )
+
+    def _set_status_message(self, message: str) -> None:
+        self.status_message = str(message).strip() or "Ready for demo capture."
+        self._refresh_metrics_status_bar()
 
     def _set_capture_metrics(self, *, packet_count: int | str, sampling_rate: float | str) -> None:
         self.packet_count_value = str(packet_count)
@@ -970,7 +982,7 @@ class DemoWindow(QWidget):
 
     def _begin_capture_cycle(self) -> None:
         self.btn_capture.setEnabled(False)
-        self.status_label.setText("Capturing CSI... Please perform the target activity now.")
+        self._set_status_message("Capturing CSI... Please perform the target activity now.")
         self._set_tab_processing_state(allow_primary_only=True)
         capture_duration = self._capture_duration()
         self._capture_started_at = time.monotonic()
@@ -1177,14 +1189,14 @@ class DemoWindow(QWidget):
 
     def _apply_hampel_filter(self, values: np.ndarray) -> np.ndarray:
         if hampel is None:
-            self.status_label.setText(
+            self._set_status_message(
                 "Hampel filter is unavailable (missing dependency). Plotting unfiltered CSI traces."
             )
             return values
         try:
             filtered = hampel(values, window_size=8)
         except Exception as exc:
-            self.status_label.setText(f"Hampel filter failed ({exc}). Plotting unfiltered ratio phase.")
+            self._set_status_message(f"Hampel filter failed ({exc}). Plotting unfiltered ratio phase.")
             return values
         if hasattr(filtered, "filtered_data"):
             return np.asarray(filtered.filtered_data)
@@ -1194,7 +1206,7 @@ class DemoWindow(QWidget):
 
     def _plot_ratio(self, pcap_path: Path, bandwidth_mhz: int):
         if not self._has_payload_packets(pcap_path):
-            self.status_label.setText(
+            self._set_status_message(
                 f"Cannot plot {pcap_path.name}: PCAP is empty (header only, no CSI packets)."
             )
             self._set_capture_metrics(packet_count=0, sampling_rate=0.0)
@@ -1202,7 +1214,7 @@ class DemoWindow(QWidget):
         csi_data, time_pkts, nfft = self.plot_calculator.load_csi_capture(pcap_path, bandwidth_mhz)
 
         if csi_data is None or time_pkts is None or csi_data.size == 0:
-            self.status_label.setText(f"Unable to load CSI data from {pcap_path.name}.")
+            self._set_status_message(f"Unable to load CSI data from {pcap_path.name}.")
             self._set_capture_metrics(packet_count=0, sampling_rate=0.0)
             return
 
@@ -1219,7 +1231,7 @@ class DemoWindow(QWidget):
             sampling_rate=float(ratio_payload["sampling_rate"]),
         )
         if not tx_pairs:
-            self.status_label.setText(
+            self._set_status_message(
                 f"Unable to compute CSI ratio from {pcap_path.name}: at least 2 TX antennas are required."
             )
             return
@@ -1246,7 +1258,7 @@ class DemoWindow(QWidget):
             ),
         )
         self._set_tab_processing_state(allow_primary_only=True)
-        self.status_label.setText("CSI magnitude/phase plotted. Processing Doppler and DoRF in background...")
+        self._set_status_message("CSI magnitude/phase plotted. Processing Doppler and DoRF in background...")
         worker = threading.Thread(
             target=self._run_background_plot_pipeline,
             args=(
@@ -1277,7 +1289,7 @@ class DemoWindow(QWidget):
     def _on_doppler_ready(self, payload: dict) -> None:
         self.plot_renderer.plot_doppler(payload)
         self._mark_tab_ready(1)
-        self.status_label.setText("Doppler tab ready. DoRF is still processing in background...")
+        self._set_status_message("Doppler tab ready. DoRF is still processing in background...")
 
     def _on_dorf_ready(self, payload: dict) -> None:
         self.plot_renderer.plot_dorf(payload)
@@ -1288,10 +1300,10 @@ class DemoWindow(QWidget):
         self.plot_renderer.plot_har(har_payload)
         self._mark_tab_ready(2)
         self._mark_tab_ready(3)
-        self.status_label.setText("All demo tabs are ready.")
+        self._set_status_message("All demo tabs are ready.")
 
     def _on_background_plot_failed(self, message: str) -> None:
-        self.status_label.setText(f"Background plotting failed: {message}")
+        self._set_status_message(f"Background plotting failed: {message}")
 
     def _plot_doppler_from_payload(self, payload: dict) -> None:
         series = payload.get("series", [])
@@ -1742,7 +1754,7 @@ class DemoWindow(QWidget):
 
     def _on_capture_finished(self, success: bool, message: str):
         self.btn_capture.setEnabled(True)
-        self.status_label.setText(message)
+        self._set_status_message(message)
         if not success:
             QMessageBox.warning(self, "Demo Capture", message)
 
