@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import threading
 import time
+from html import escape
 from datetime import datetime
 from pathlib import Path
 from math import ceil
@@ -487,20 +488,6 @@ class DemoWindow(QWidget):
         self.demo_tabs = QTabWidget(self)
         csi_tab = QWidget(self.demo_tabs)
         csi_layout = QVBoxLayout(csi_tab)
-        self.chk_hampel_ratio_phase = QCheckBox(
-            "Apply Hampel filter to CSI ratio phase", csi_tab
-        )
-        self.chk_hampel_ratio_phase.setChecked(
-            bool(self.demo_profile.get("apply_hampel_to_ratio_phase", False))
-        )
-        self.chk_hampel_ratio_magnitude = QCheckBox(
-            "Apply Hampel filter to CSI ratio magnitude", csi_tab
-        )
-        self.chk_hampel_ratio_magnitude.setChecked(
-            bool(self.demo_profile.get("apply_hampel_to_ratio_magnitude", False))
-        )
-        csi_layout.addWidget(self.chk_hampel_ratio_phase)
-        csi_layout.addWidget(self.chk_hampel_ratio_magnitude)
         csi_layout.addWidget(self.plot_scroll, stretch=1)
         self.demo_tabs.addTab(csi_tab, "1. CSI Magnitude and Phase")
 
@@ -594,14 +581,15 @@ class DemoWindow(QWidget):
         )
         self.metrics_status_bar.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         metrics_row.addWidget(self.metrics_status_bar, stretch=1)
-        self.website_status_label = QLabel(self._website_url_text(), self)
+        self.website_status_label = QLabel(self._website_url_markup(), self)
         self.website_status_label.setStyleSheet(
             "QLabel {border: 1px solid #cfd8e3; border-radius: 6px; background: #f8fafc; "
             "color: #2563eb; font-size: 12px; font-weight: 700; padding: 5px 8px;}"
         )
         self.website_status_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.website_status_label.setWordWrap(False)
-        self.website_status_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.website_status_label.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        self.website_status_label.setOpenExternalLinks(True)
         metrics_row.addWidget(self.website_status_label, stretch=0)
         bottom_row.addLayout(metrics_row)
         self._refresh_metrics_status_bar()
@@ -665,6 +653,11 @@ class DemoWindow(QWidget):
             or ""
         ).strip()
         return text or "https://dorf.navidhasanzadeh.com"
+
+    def _website_url_markup(self) -> str:
+        website = self._website_url_text()
+        escaped = escape(website)
+        return f'<a href="{escaped}">{escaped}</a>'
 
     def _university_logo_image_size_px(self) -> int:
         try:
@@ -1247,8 +1240,10 @@ class DemoWindow(QWidget):
         )
         self.plot_renderer.plot_ratio(
             ratio_payload,
-            apply_hampel_phase=self.chk_hampel_ratio_phase.isChecked(),
-            apply_hampel_magnitude=self.chk_hampel_ratio_magnitude.isChecked(),
+            apply_hampel_phase=bool(self.demo_profile.get("apply_hampel_to_ratio_phase", False)),
+            apply_hampel_magnitude=bool(
+                self.demo_profile.get("apply_hampel_to_ratio_magnitude", False)
+            ),
         )
         self._set_tab_processing_state(allow_primary_only=True)
         self.status_label.setText("CSI magnitude/phase plotted. Processing Doppler and DoRF in background...")
