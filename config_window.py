@@ -964,7 +964,7 @@ def _load_demo_profiles_from_csv():
                 ).strip()
                 try:
                     profile["university_logo_image_size_px"] = max(
-                        80,
+                        20,
                         min(
                             600,
                             int(
@@ -2089,7 +2089,7 @@ def save_demo_profiles(profiles: dict):
                             )
                         ).strip(),
                         "university_logo_image_size_px": max(
-                            80,
+                            20,
                             min(
                                 600,
                                 int(
@@ -4574,7 +4574,7 @@ class ConfigDialog(QDialog):
         self.txt_demo_university_logo_image_path.setPlaceholderText("/path/to/UofT-logo.png")
         form.addRow("University logo image path:", self.txt_demo_university_logo_image_path)
         self.spn_demo_university_logo_image_size = QSpinBox(self.grp_demo)
-        self.spn_demo_university_logo_image_size.setRange(80, 600)
+        self.spn_demo_university_logo_image_size.setRange(20, 600)
         self.spn_demo_university_logo_image_size.setSuffix(" px")
         self.spn_demo_university_logo_image_size.setSingleStep(10)
         form.addRow("University logo image height:", self.spn_demo_university_logo_image_size)

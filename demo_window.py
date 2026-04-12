@@ -667,7 +667,7 @@ class DemoWindow(QWidget):
             )
         except (TypeError, ValueError):
             value = 160
-        return max(80, min(600, value))
+        return max(20, min(600, value))
 
     def _demo_title_font_size_px(self) -> int:
         try:
