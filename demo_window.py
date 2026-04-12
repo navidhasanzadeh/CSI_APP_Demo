@@ -497,6 +497,11 @@ class DemoWindow(QWidget):
         )
 
         self.demo_tabs = QTabWidget(self)
+        self.demo_tabs.setStyleSheet(
+            "QTabWidget::pane {border: 1px solid #d1d5db; border-radius: 8px; background: #ffffff;}"
+            "QTabBar::tab {background: #e5e7eb; padding: 6px 10px; margin-right: 2px; border-top-left-radius: 6px; border-top-right-radius: 6px;}"
+            "QTabBar::tab:selected {background: #ffffff; font-weight: 700;}"
+        )
         csi_tab = QWidget(self.demo_tabs)
         csi_layout = QVBoxLayout(csi_tab)
         csi_layout.addWidget(self.plot_scroll, stretch=1)
@@ -674,14 +679,6 @@ class DemoWindow(QWidget):
         )
         demo_controls_row.addWidget(self.btn_capture)
 
-        self.btn_close = QPushButton("Close Window", self.demo_panel)
-        self.btn_close.clicked.connect(self.close)
-        self.btn_close.setStyleSheet(
-            "QPushButton {background-color: #2563eb; color: white; font-size: 13px; font-weight: 600; "
-            "padding: 6px 12px; border-radius: 8px;}"
-            "QPushButton:hover {background-color: #1d4ed8;}"
-        )
-        demo_controls_row.addWidget(self.btn_close)
         demo_controls_row.addStretch(1)
         demo_panel_layout.addLayout(demo_controls_row)
 
