@@ -392,6 +392,7 @@ class DemoWindow(QWidget):
             "font-size: 18px; font-weight: 700; color: #1e3a8a; margin: 0px; padding: 0px;",
             self._icassp_logo_text_vertical_gap(),
         ))
+        self.icassp_logo_label.setVisible(bool(self._icassp_title_text()))
         header_left_col.addWidget(self.icassp_logo_label)
         header_row.addLayout(header_left_col, stretch=2)
 
@@ -456,9 +457,10 @@ class DemoWindow(QWidget):
         self._update_university_logo_placeholder()
         logo_col.addWidget(self.university_logo_placeholder, alignment=Qt.AlignRight)
 
-        self.wirlab_logo_label = QLabel("WIRLab", self)
+        self.wirlab_logo_label = QLabel(self._wirlab_text(), self)
         self.wirlab_logo_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.wirlab_logo_label.setStyleSheet("font-size: 20px; font-weight: 800; color: #0f5e2b;")
+        self.wirlab_logo_label.setVisible(bool(self._wirlab_text()))
         logo_col.addWidget(self.wirlab_logo_label, alignment=Qt.AlignRight)
         header_row.addLayout(logo_col, stretch=2)
         root.addLayout(header_row)
@@ -694,8 +696,7 @@ class DemoWindow(QWidget):
         return str(self.demo_profile.get("icassp_logo_image_path") or "").strip()
 
     def _icassp_title_text(self) -> str:
-        text = str(self.demo_profile.get("icassp_title_text") or "").strip()
-        return text or "IEEE ICASSP 2026"
+        return str(self.demo_profile.get("icassp_title_text") or "").strip()
 
     def _icassp_logo_text_vertical_gap(self) -> int:
         try:
@@ -716,8 +717,10 @@ class DemoWindow(QWidget):
         return text or "Authors: Navid Hasanzadeh, Shahrokh Valaee"
 
     def _university_text(self) -> str:
-        text = str(self.demo_profile.get("university_text") or "").strip()
-        return text or "University of Toronto"
+        return str(self.demo_profile.get("university_text") or "").strip()
+
+    def _wirlab_text(self) -> str:
+        return str(self.demo_profile.get("wirlab_text", "WIRLab") or "").strip()
 
     def _title_authors_vertical_gap(self) -> int:
         try:
