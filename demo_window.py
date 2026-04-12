@@ -413,7 +413,7 @@ class DemoWindow(QWidget):
         title_col.addSpacing(max(0, self._title_authors_vertical_gap()))
 
         self.authors_label = QLabel(self._authors_text(), self)
-        self.authors_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.authors_label.setAlignment(Qt.AlignCenter)
         self.authors_label.setWordWrap(False)
         self.authors_label.setContentsMargins(0, 0, 0, 0)
         self.authors_label.setMargin(0)
@@ -428,7 +428,7 @@ class DemoWindow(QWidget):
         title_col.addSpacing(max(0, self._authors_university_vertical_gap()))
 
         self.university_label = QLabel(self._university_text(), self)
-        self.university_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.university_label.setAlignment(Qt.AlignCenter)
         self.university_label.setWordWrap(False)
         self.university_label.setContentsMargins(0, 0, 0, 0)
         self.university_label.setMargin(0)
