@@ -500,8 +500,12 @@ class DemoWindow(QWidget):
         self.demo_tabs.setStyleSheet(
             "QTabWidget::pane {border: 1px solid #d1d5db; border-radius: 8px; background: #ffffff;}"
             "QTabBar::tab {background: #e5e7eb; padding: 6px 10px; margin-right: 2px; border-top-left-radius: 6px; border-top-right-radius: 6px;}"
-            "QTabBar::tab:selected {background: #ffffff; font-weight: 700;}"
+            "QTabBar::tab:selected {background: #ffffff; font-weight: 700; padding: 6px 16px;}"
         )
+        demo_tab_bar = self.demo_tabs.tabBar()
+        demo_tab_bar.setExpanding(False)
+        demo_tab_bar.setUsesScrollButtons(True)
+        demo_tab_bar.setElideMode(Qt.ElideNone)
         csi_tab = QWidget(self.demo_tabs)
         csi_layout = QVBoxLayout(csi_tab)
         csi_layout.addWidget(self.plot_scroll, stretch=1)
@@ -587,8 +591,12 @@ class DemoWindow(QWidget):
         self.info_tabs.setStyleSheet(
             "QTabWidget::pane {border: 1px solid #d1d5db; border-radius: 8px; background: #ffffff;}"
             "QTabBar::tab {background: #e5e7eb; padding: 6px 10px; margin-right: 2px; border-top-left-radius: 6px; border-top-right-radius: 6px;}"
-            "QTabBar::tab:selected {background: #ffffff; font-weight: 700;}"
+            "QTabBar::tab:selected {background: #ffffff; font-weight: 700; padding: 6px 16px;}"
         )
+        info_tab_bar = self.info_tabs.tabBar()
+        info_tab_bar.setExpanding(False)
+        info_tab_bar.setUsesScrollButtons(True)
+        info_tab_bar.setElideMode(Qt.ElideNone)
         info_layout.addWidget(self.info_tabs, stretch=1)
 
         summary_tab = QWidget(self.info_tabs)
