@@ -445,14 +445,14 @@ class DemoWindow(QWidget):
         logo_col.setSpacing(1)
         logo_col.setAlignment(Qt.AlignRight | Qt.AlignTop)
         self.university_logo_placeholder = QLabel(self)
-        logo_size = self._university_logo_image_size_px()
-        self.university_logo_placeholder.setFixedSize(logo_size, logo_size)
+        self.university_logo_placeholder.setFixedHeight(self._university_logo_image_size_px())
+        self.university_logo_placeholder.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.university_logo_placeholder.setAlignment(Qt.AlignCenter)
-        self.university_logo_placeholder.setFrameStyle(QFrame.Box | QFrame.Plain)
-        self.university_logo_placeholder.setStyleSheet(
-            "QLabel {border: 2px dashed #94a3b8; border-radius: 10px; background: #f8fafc; "
-            "color: #475569; font-size: 14px; font-weight: 600;}"
-        )
+        self.university_logo_placeholder.setFrameStyle(QFrame.NoFrame)
+        self.university_logo_placeholder.setContentsMargins(0, 0, 0, 0)
+        self.university_logo_placeholder.setMargin(0)
+        self.university_logo_placeholder.setIndent(0)
+        self.university_logo_placeholder.setStyleSheet("border: none;")
         self._update_university_logo_placeholder()
         logo_col.addWidget(self.university_logo_placeholder, alignment=Qt.AlignRight)
 
@@ -795,19 +795,22 @@ class DemoWindow(QWidget):
 
     def _update_university_logo_placeholder(self) -> None:
         path = self._university_logo_image_path()
+        target_height = self._university_logo_image_size_px()
         if path and Path(path).exists():
             pixmap = QPixmap(path)
             if not pixmap.isNull():
-                target_size = self.university_logo_placeholder.size()
-                self.university_logo_placeholder.setPixmap(
-                    pixmap.scaled(
-                        target_size,
-                        Qt.KeepAspectRatio,
-                        Qt.SmoothTransformation,
-                    )
-                )
+                scaled = pixmap.scaledToHeight(target_height, Qt.SmoothTransformation)
+                self.university_logo_placeholder.setFixedSize(scaled.size())
+                self.university_logo_placeholder.setPixmap(scaled)
+                self.university_logo_placeholder.setStyleSheet("border: none;")
                 self.university_logo_placeholder.setText("")
                 return
+        self.university_logo_placeholder.setFixedHeight(target_height)
+        self.university_logo_placeholder.setFixedWidth(max(220, target_height))
+        self.university_logo_placeholder.setPixmap(QPixmap())
+        self.university_logo_placeholder.setStyleSheet(
+            "QLabel {border: 1px dashed #94a3b8; color: #475569; font-size: 12px; font-weight: 600;}"
+        )
         if path:
             self.university_logo_placeholder.setText(
                 "University logo not found\nSet a valid image path\nin Demo profile"
@@ -816,7 +819,6 @@ class DemoWindow(QWidget):
             self.university_logo_placeholder.setText(
                 "UofT logo placeholder\nSet image path\nin Demo profile"
             )
-        self.university_logo_placeholder.setPixmap(QPixmap())
 
     def _capture_duration(self) -> float:
         return max(float(self.demo_profile.get("capture_duration_seconds", 5.0)), 1.0)
