@@ -499,8 +499,8 @@ class DemoWindow(QWidget):
         self.demo_tabs = QTabWidget(self)
         self.demo_tabs.setStyleSheet(
             "QTabWidget::pane {border: 1px solid #d1d5db; border-radius: 8px; background: #ffffff;}"
-            "QTabBar::tab {background: #e5e7eb; padding: 6px 10px; margin-right: 2px; border-top-left-radius: 6px; border-top-right-radius: 6px;}"
-            "QTabBar::tab:selected {background: #ffffff; font-weight: 700; padding: 6px 8px;}"
+            "QTabBar::tab {background: #e5e7eb; min-width: 150px; padding: 6px 12px; margin-right: 2px; border-top-left-radius: 6px; border-top-right-radius: 6px;}"
+            "QTabBar::tab:selected {background: #ffffff; font-weight: 700; padding: 6px 6px;}"
         )
         demo_tab_bar = self.demo_tabs.tabBar()
         demo_tab_bar.setExpanding(False)
@@ -590,8 +590,8 @@ class DemoWindow(QWidget):
         self.info_tabs = QTabWidget(self.info_panel)
         self.info_tabs.setStyleSheet(
             "QTabWidget::pane {border: 1px solid #d1d5db; border-radius: 8px; background: #ffffff;}"
-            "QTabBar::tab {background: #e5e7eb; padding: 6px 10px; margin-right: 2px; border-top-left-radius: 6px; border-top-right-radius: 6px;}"
-            "QTabBar::tab:selected {background: #ffffff; font-weight: 700; padding: 6px 8px;}"
+            "QTabBar::tab {background: #e5e7eb; min-width: 150px; padding: 6px 12px; margin-right: 2px; border-top-left-radius: 6px; border-top-right-radius: 6px;}"
+            "QTabBar::tab:selected {background: #ffffff; font-weight: 700; padding: 6px 6px;}"
         )
         info_tab_bar = self.info_tabs.tabBar()
         info_tab_bar.setExpanding(False)
