@@ -23,6 +23,7 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtWidgets import (
+    QApplication,
     QDialog,
     QCheckBox,
     QGridLayout,
@@ -150,12 +151,18 @@ class CSICaptureGuidanceDialog(QDialog):
         left_video_path: str = "",
         right_label: str = "Gesture 2",
         right_video_path: str = "",
+        countdown_seconds: int = 10,
     ):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.resize(980, 560)
         self._accepted = False
         self._capture_started = False
+        self._countdown_seconds = max(0, int(countdown_seconds))
+        self._countdown_remaining = self._countdown_seconds
+        self._countdown_timer = QTimer(self)
+        self._countdown_timer.setInterval(1000)
+        self._countdown_timer.timeout.connect(self._on_countdown_tick)
         self._players: list[QMediaPlayer] = []
         self._video_paths = [left_video_path, right_video_path]
         self._video_widgets: list[QVideoWidget] = []
@@ -246,6 +253,14 @@ class CSICaptureGuidanceDialog(QDialog):
         self.transfer_progress.hide()
         root.addWidget(self.transfer_progress)
 
+        self.countdown_label = QLabel("", self)
+        self.countdown_label.setAlignment(Qt.AlignCenter)
+        self.countdown_label.setStyleSheet(
+            "font-size: 180px; font-weight: 800; color: #dc2626; line-height: 1;"
+        )
+        self.countdown_label.hide()
+        root.addWidget(self.countdown_label)
+
         button_row = QHBoxLayout()
         button_row.addStretch(1)
         self.btn_start = QPushButton("Start Capture", self)
@@ -258,6 +273,11 @@ class CSICaptureGuidanceDialog(QDialog):
         button_row.addWidget(self.btn_start)
 
         self.btn_close = QPushButton("Close", self)
+        self.btn_close.setStyleSheet(
+            "QPushButton {background-color: #dc2626; color: white; font-weight: 700; "
+            "padding: 6px 12px; border-radius: 8px;}"
+            "QPushButton:hover {background-color: #b91c1c;}"
+        )
         self.btn_close.clicked.connect(self.reject)
         button_row.addWidget(self.btn_close)
         root.addLayout(button_row)
@@ -282,10 +302,37 @@ class CSICaptureGuidanceDialog(QDialog):
     def _on_start_clicked(self) -> None:
         if self._capture_started:
             return
-        self._capture_started = True
-        self._accepted = True
         self.btn_start.setEnabled(False)
         self.btn_close.setEnabled(False)
+        self.capture_progress.hide()
+        self.elapsed_label.hide()
+        self.transfer_progress.hide()
+        self._countdown_remaining = self._countdown_seconds
+        self._show_countdown_value(self._countdown_remaining)
+        QApplication.beep()
+        if self._countdown_remaining <= 0:
+            self._start_capture_after_countdown()
+            return
+        self._countdown_timer.start()
+
+    def _on_countdown_tick(self) -> None:
+        self._countdown_remaining -= 1
+        self._show_countdown_value(self._countdown_remaining)
+        QApplication.beep()
+        if self._countdown_remaining <= 0:
+            self._countdown_timer.stop()
+            self._start_capture_after_countdown()
+
+    def _show_countdown_value(self, value: int) -> None:
+        self.countdown_label.setText(str(max(0, int(value))))
+        self.countdown_label.show()
+
+    def _start_capture_after_countdown(self) -> None:
+        if self._capture_started:
+            return
+        self._capture_started = True
+        self._accepted = True
+        self.countdown_label.hide()
         self.capture_progress.show()
         self.elapsed_label.show()
         self.transfer_progress.hide()
@@ -318,6 +365,7 @@ class CSICaptureGuidanceDialog(QDialog):
         self.accept()
 
     def closeEvent(self, event):  # pragma: no cover - UI lifecycle
+        self._countdown_timer.stop()
         for player in self._players:
             player.stop()
         super().closeEvent(event)
@@ -1111,6 +1159,12 @@ class DemoWindow(QWidget):
         self._show_capture_guidance_dialog()
 
     def _show_capture_guidance_dialog(self) -> None:
+        try:
+            countdown_seconds = max(
+                0, int(self.demo_profile.get("capture_guidance_countdown_seconds", 10))
+            )
+        except (TypeError, ValueError):
+            countdown_seconds = 10
         dlg = CSICaptureGuidanceDialog(
             parent=self,
             title=str(
@@ -1138,6 +1192,7 @@ class DemoWindow(QWidget):
             right_video_path=str(
                 self.demo_profile.get("capture_guidance_video_right_path", "")
             ).strip(),
+            countdown_seconds=countdown_seconds,
         )
         dlg.start_capture_requested.connect(self._begin_capture_cycle)
         dlg.rejected.connect(self._on_capture_guidance_closed)

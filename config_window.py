@@ -412,6 +412,7 @@ DEFAULT_DEMO_PROFILE = {
     "authors_university_vertical_gap": 0,
     "capture_guidance_title": "CSI Capture Guidance",
     "capture_guidance_message": "Please perform one of these gestures.",
+    "capture_guidance_countdown_seconds": 10,
     "capture_guidance_video_left_label": "Left/Right",
     "capture_guidance_video_left_path": "videos/right_left.mp4",
     "capture_guidance_video_right_label": "Up/Down",
@@ -1112,6 +1113,23 @@ def _load_demo_profiles_from_csv():
                     row.get("capture_guidance_message")
                     or profile["capture_guidance_message"]
                 ).strip() or DEFAULT_DEMO_PROFILE["capture_guidance_message"]
+                try:
+                    profile["capture_guidance_countdown_seconds"] = max(
+                        0,
+                        int(
+                            row.get(
+                                "capture_guidance_countdown_seconds",
+                                profile.get(
+                                    "capture_guidance_countdown_seconds",
+                                    DEFAULT_DEMO_PROFILE["capture_guidance_countdown_seconds"],
+                                ),
+                            )
+                        ),
+                    )
+                except (TypeError, ValueError):
+                    profile["capture_guidance_countdown_seconds"] = DEFAULT_DEMO_PROFILE[
+                        "capture_guidance_countdown_seconds"
+                    ]
                 profile["capture_guidance_video_left_label"] = (
                     row.get("capture_guidance_video_left_label")
                     or profile["capture_guidance_video_left_label"]
@@ -2082,6 +2100,7 @@ def save_demo_profiles(profiles: dict):
                 "authors_university_vertical_gap",
                 "capture_guidance_title",
                 "capture_guidance_message",
+                "capture_guidance_countdown_seconds",
                 "capture_guidance_video_left_label",
                 "capture_guidance_video_left_path",
                 "capture_guidance_video_right_label",
@@ -2291,6 +2310,15 @@ def save_demo_profiles(profiles: dict):
                                 )
                             ).strip()
                             or DEFAULT_DEMO_PROFILE["capture_guidance_message"]
+                        ),
+                        "capture_guidance_countdown_seconds": max(
+                            0,
+                            int(
+                                profile.get(
+                                    "capture_guidance_countdown_seconds",
+                                    DEFAULT_DEMO_PROFILE["capture_guidance_countdown_seconds"],
+                                )
+                            ),
                         ),
                         "capture_guidance_video_left_label": (
                             str(
@@ -4793,6 +4821,13 @@ class ConfigDialog(QDialog):
             DEFAULT_DEMO_PROFILE["capture_guidance_message"]
         )
         form.addRow("Guidance message:", self.txt_demo_capture_guidance_message)
+        self.spn_demo_capture_guidance_countdown = QSpinBox(self.grp_demo)
+        self.spn_demo_capture_guidance_countdown.setRange(0, 60)
+        self.spn_demo_capture_guidance_countdown.setSuffix(" s")
+        form.addRow(
+            "Guidance countdown seconds:",
+            self.spn_demo_capture_guidance_countdown,
+        )
 
         self.txt_demo_capture_guidance_left_label = QLineEdit(self.grp_demo)
         self.txt_demo_capture_guidance_left_label.setPlaceholderText(
@@ -7235,6 +7270,22 @@ class ConfigDialog(QDialog):
                     )
                 )
             )
+        if hasattr(self, "spn_demo_capture_guidance_countdown"):
+            try:
+                countdown_seconds = max(
+                    0,
+                    int(
+                        profile.get(
+                            "capture_guidance_countdown_seconds",
+                            DEFAULT_DEMO_PROFILE["capture_guidance_countdown_seconds"],
+                        )
+                    ),
+                )
+            except (TypeError, ValueError):
+                countdown_seconds = DEFAULT_DEMO_PROFILE[
+                    "capture_guidance_countdown_seconds"
+                ]
+            self.spn_demo_capture_guidance_countdown.setValue(countdown_seconds)
         if hasattr(self, "txt_demo_capture_guidance_left_label"):
             self.txt_demo_capture_guidance_left_label.setText(
                 str(
@@ -8402,6 +8453,10 @@ class ConfigDialog(QDialog):
             profile["capture_guidance_message"] = (
                 self.txt_demo_capture_guidance_message.text().strip()
                 or DEFAULT_DEMO_PROFILE["capture_guidance_message"]
+            )
+        if hasattr(self, "spn_demo_capture_guidance_countdown"):
+            profile["capture_guidance_countdown_seconds"] = int(
+                self.spn_demo_capture_guidance_countdown.value()
             )
         if hasattr(self, "txt_demo_capture_guidance_left_label"):
             profile["capture_guidance_video_left_label"] = (
