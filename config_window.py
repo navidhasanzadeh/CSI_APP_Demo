@@ -395,14 +395,17 @@ DEFAULT_DEMO_PROFILE = {
     "apply_hampel_to_ratio_magnitude": False,
     "apply_hampel_to_ratio_phase": False,
     "demo_title_text": "Doppler Radiance Fields (DoRF) for Robust Wi-Fi Sensing and Human Activity Recognition",
-    "qr_code_image_path": "",
-    "qr_code_image_size_px": 160,
+    "university_logo_image_path": "",
+    "university_logo_image_size_px": 160,
     "icassp_logo_image_path": "",
-    "qr_website_url": "https://dorf.navidhasanzadeh.com",
+    "website_url": "https://dorf.navidhasanzadeh.com",
     "icassp_title_text": "IEEE ICASSP 2026",
     "icassp_logo_text_vertical_gap": 0,
+    "demo_title_font_size_px": 22,
     "authors_text": "Authors: Navid Hasanzadeh, Shahrokh Valaee",
+    "authors_font_size_px": 12,
     "university_text": "University of Toronto",
+    "university_font_size_px": 12,
     "title_authors_vertical_gap": 0,
     "authors_university_vertical_gap": 0,
     "capture_guidance_title": "CSI Capture Guidance",
@@ -954,19 +957,23 @@ def _load_demo_profiles_from_csv():
                     row.get("demo_title_text")
                     or profile["demo_title_text"]
                 ).strip() or DEFAULT_DEMO_PROFILE["demo_title_text"]
-                profile["qr_code_image_path"] = (
-                    row.get("qr_code_image_path")
-                    or profile["qr_code_image_path"]
+                profile["university_logo_image_path"] = (
+                    row.get("university_logo_image_path")
+                    or row.get("qr_code_image_path")
+                    or profile["university_logo_image_path"]
                 ).strip()
                 try:
-                    profile["qr_code_image_size_px"] = max(
+                    profile["university_logo_image_size_px"] = max(
                         80,
                         min(
                             600,
                             int(
                                 row.get(
-                                    "qr_code_image_size_px",
-                                    profile["qr_code_image_size_px"],
+                                    "university_logo_image_size_px",
+                                    row.get(
+                                        "qr_code_image_size_px",
+                                        profile["university_logo_image_size_px"],
+                                    ),
                                 )
                             ),
                         ),
@@ -977,14 +984,30 @@ def _load_demo_profiles_from_csv():
                     row.get("icassp_logo_image_path")
                     or profile["icassp_logo_image_path"]
                 ).strip()
-                profile["qr_website_url"] = (
-                    row.get("qr_website_url")
-                    or profile["qr_website_url"]
-                ).strip() or DEFAULT_DEMO_PROFILE["qr_website_url"]
+                profile["website_url"] = (
+                    row.get("website_url")
+                    or row.get("qr_website_url")
+                    or profile["website_url"]
+                ).strip() or DEFAULT_DEMO_PROFILE["website_url"]
                 profile["icassp_title_text"] = (
                     row.get("icassp_title_text")
                     or profile["icassp_title_text"]
                 ).strip() or DEFAULT_DEMO_PROFILE["icassp_title_text"]
+                try:
+                    profile["demo_title_font_size_px"] = max(
+                        10,
+                        min(
+                            96,
+                            int(
+                                row.get(
+                                    "demo_title_font_size_px",
+                                    profile["demo_title_font_size_px"],
+                                )
+                            ),
+                        ),
+                    )
+                except (TypeError, ValueError):
+                    pass
                 try:
                     profile["icassp_logo_text_vertical_gap"] = int(
                         row.get(
@@ -998,10 +1021,40 @@ def _load_demo_profiles_from_csv():
                     row.get("authors_text")
                     or profile["authors_text"]
                 ).strip() or DEFAULT_DEMO_PROFILE["authors_text"]
+                try:
+                    profile["authors_font_size_px"] = max(
+                        8,
+                        min(
+                            72,
+                            int(
+                                row.get(
+                                    "authors_font_size_px",
+                                    profile["authors_font_size_px"],
+                                )
+                            ),
+                        ),
+                    )
+                except (TypeError, ValueError):
+                    pass
                 profile["university_text"] = (
                     row.get("university_text")
                     or profile["university_text"]
                 ).strip() or DEFAULT_DEMO_PROFILE["university_text"]
+                try:
+                    profile["university_font_size_px"] = max(
+                        8,
+                        min(
+                            72,
+                            int(
+                                row.get(
+                                    "university_font_size_px",
+                                    profile["university_font_size_px"],
+                                )
+                            ),
+                        ),
+                    )
+                except (TypeError, ValueError):
+                    pass
                 try:
                     profile["title_authors_vertical_gap"] = int(
                         row.get(
@@ -1959,14 +2012,17 @@ def save_demo_profiles(profiles: dict):
                 "apply_hampel_to_ratio_magnitude",
                 "apply_hampel_to_ratio_phase",
                 "demo_title_text",
-                "qr_code_image_path",
-                "qr_code_image_size_px",
+                "university_logo_image_path",
+                "university_logo_image_size_px",
                 "icassp_logo_image_path",
-                "qr_website_url",
+                "website_url",
                 "icassp_title_text",
                 "icassp_logo_text_vertical_gap",
+                "demo_title_font_size_px",
                 "authors_text",
+                "authors_font_size_px",
                 "university_text",
+                "university_font_size_px",
                 "title_authors_vertical_gap",
                 "authors_university_vertical_gap",
                 "capture_guidance_title",
@@ -2026,20 +2082,20 @@ def save_demo_profiles(profiles: dict):
                             ).strip()
                             or DEFAULT_DEMO_PROFILE["demo_title_text"]
                         ),
-                        "qr_code_image_path": str(
+                        "university_logo_image_path": str(
                             profile.get(
-                                "qr_code_image_path",
-                                DEFAULT_DEMO_PROFILE["qr_code_image_path"],
+                                "university_logo_image_path",
+                                DEFAULT_DEMO_PROFILE["university_logo_image_path"],
                             )
                         ).strip(),
-                        "qr_code_image_size_px": max(
+                        "university_logo_image_size_px": max(
                             80,
                             min(
                                 600,
                                 int(
                                     profile.get(
-                                        "qr_code_image_size_px",
-                                        DEFAULT_DEMO_PROFILE["qr_code_image_size_px"],
+                                        "university_logo_image_size_px",
+                                        DEFAULT_DEMO_PROFILE["university_logo_image_size_px"],
                                     )
                                 ),
                             ),
@@ -2050,14 +2106,14 @@ def save_demo_profiles(profiles: dict):
                                 DEFAULT_DEMO_PROFILE["icassp_logo_image_path"],
                             )
                         ).strip(),
-                        "qr_website_url": (
+                        "website_url": (
                             str(
                                 profile.get(
-                                    "qr_website_url",
-                                    DEFAULT_DEMO_PROFILE["qr_website_url"],
+                                    "website_url",
+                                    DEFAULT_DEMO_PROFILE["website_url"],
                                 )
                             ).strip()
-                            or DEFAULT_DEMO_PROFILE["qr_website_url"]
+                            or DEFAULT_DEMO_PROFILE["website_url"]
                         ),
                         "icassp_title_text": (
                             str(
@@ -2074,6 +2130,18 @@ def save_demo_profiles(profiles: dict):
                                 DEFAULT_DEMO_PROFILE["icassp_logo_text_vertical_gap"],
                             )
                         ),
+                        "demo_title_font_size_px": max(
+                            10,
+                            min(
+                                96,
+                                int(
+                                    profile.get(
+                                        "demo_title_font_size_px",
+                                        DEFAULT_DEMO_PROFILE["demo_title_font_size_px"],
+                                    )
+                                ),
+                            ),
+                        ),
                         "authors_text": (
                             str(
                                 profile.get(
@@ -2083,6 +2151,18 @@ def save_demo_profiles(profiles: dict):
                             ).strip()
                             or DEFAULT_DEMO_PROFILE["authors_text"]
                         ),
+                        "authors_font_size_px": max(
+                            8,
+                            min(
+                                72,
+                                int(
+                                    profile.get(
+                                        "authors_font_size_px",
+                                        DEFAULT_DEMO_PROFILE["authors_font_size_px"],
+                                    )
+                                ),
+                            ),
+                        ),
                         "university_text": (
                             str(
                                 profile.get(
@@ -2091,6 +2171,18 @@ def save_demo_profiles(profiles: dict):
                                 )
                             ).strip()
                             or DEFAULT_DEMO_PROFILE["university_text"]
+                        ),
+                        "university_font_size_px": max(
+                            8,
+                            min(
+                                72,
+                                int(
+                                    profile.get(
+                                        "university_font_size_px",
+                                        DEFAULT_DEMO_PROFILE["university_font_size_px"],
+                                    )
+                                ),
+                            ),
                         ),
                         "title_authors_vertical_gap": int(
                             profile.get(
@@ -4478,22 +4570,22 @@ class ConfigDialog(QDialog):
         self.txt_demo_title.setPlaceholderText(DEFAULT_DEMO_PROFILE["demo_title_text"])
         form.addRow("Demo window title:", self.txt_demo_title)
 
-        self.txt_demo_qr_image_path = QLineEdit(self.grp_demo)
-        self.txt_demo_qr_image_path.setPlaceholderText("/path/to/qr-code.png")
-        form.addRow("QR image path:", self.txt_demo_qr_image_path)
-        self.spn_demo_qr_image_size = QSpinBox(self.grp_demo)
-        self.spn_demo_qr_image_size.setRange(80, 600)
-        self.spn_demo_qr_image_size.setSuffix(" px")
-        self.spn_demo_qr_image_size.setSingleStep(10)
-        form.addRow("QR image size:", self.spn_demo_qr_image_size)
+        self.txt_demo_university_logo_image_path = QLineEdit(self.grp_demo)
+        self.txt_demo_university_logo_image_path.setPlaceholderText("/path/to/UofT-logo.png")
+        form.addRow("University logo image path:", self.txt_demo_university_logo_image_path)
+        self.spn_demo_university_logo_image_size = QSpinBox(self.grp_demo)
+        self.spn_demo_university_logo_image_size.setRange(80, 600)
+        self.spn_demo_university_logo_image_size.setSuffix(" px")
+        self.spn_demo_university_logo_image_size.setSingleStep(10)
+        form.addRow("University logo image size:", self.spn_demo_university_logo_image_size)
 
         self.txt_demo_icassp_logo_image_path = QLineEdit(self.grp_demo)
         self.txt_demo_icassp_logo_image_path.setPlaceholderText("/path/to/icassp-logo.png")
         form.addRow("ICASSP logo image path:", self.txt_demo_icassp_logo_image_path)
 
-        self.txt_demo_qr_website = QLineEdit(self.grp_demo)
-        self.txt_demo_qr_website.setPlaceholderText(DEFAULT_DEMO_PROFILE["qr_website_url"])
-        form.addRow("QR website URL:", self.txt_demo_qr_website)
+        self.txt_demo_website_url = QLineEdit(self.grp_demo)
+        self.txt_demo_website_url.setPlaceholderText(DEFAULT_DEMO_PROFILE["website_url"])
+        form.addRow("Website URL (status bar):", self.txt_demo_website_url)
 
         self.txt_demo_icassp_title = QLineEdit(self.grp_demo)
         self.txt_demo_icassp_title.setPlaceholderText(DEFAULT_DEMO_PROFILE["icassp_title_text"])
@@ -4505,14 +4597,26 @@ class ConfigDialog(QDialog):
             "Top-left logo/text vertical gap:",
             self.spn_demo_icassp_logo_text_vertical_gap,
         )
+        self.spn_demo_title_font_size = QSpinBox(self.grp_demo)
+        self.spn_demo_title_font_size.setRange(10, 96)
+        self.spn_demo_title_font_size.setSuffix(" px")
+        form.addRow("Title font size:", self.spn_demo_title_font_size)
 
         self.txt_demo_authors = QLineEdit(self.grp_demo)
         self.txt_demo_authors.setPlaceholderText(DEFAULT_DEMO_PROFILE["authors_text"])
         form.addRow("Authors text:", self.txt_demo_authors)
+        self.spn_demo_authors_font_size = QSpinBox(self.grp_demo)
+        self.spn_demo_authors_font_size.setRange(8, 72)
+        self.spn_demo_authors_font_size.setSuffix(" px")
+        form.addRow("Authors font size:", self.spn_demo_authors_font_size)
 
         self.txt_demo_university = QLineEdit(self.grp_demo)
         self.txt_demo_university.setPlaceholderText(DEFAULT_DEMO_PROFILE["university_text"])
         form.addRow("University text:", self.txt_demo_university)
+        self.spn_demo_university_font_size = QSpinBox(self.grp_demo)
+        self.spn_demo_university_font_size.setRange(8, 72)
+        self.spn_demo_university_font_size.setSuffix(" px")
+        form.addRow("University font size:", self.spn_demo_university_font_size)
         self.spn_demo_title_authors_vertical_gap = QSpinBox(self.grp_demo)
         self.spn_demo_title_authors_vertical_gap.setRange(-80, 80)
         self.spn_demo_title_authors_vertical_gap.setSuffix(" px")
@@ -6745,25 +6849,31 @@ class ConfigDialog(QDialog):
                     )
                 )
             )
-        if hasattr(self, "txt_demo_qr_image_path"):
-            self.txt_demo_qr_image_path.setText(
+        if hasattr(self, "txt_demo_university_logo_image_path"):
+            self.txt_demo_university_logo_image_path.setText(
                 str(
                     profile.get(
-                        "qr_code_image_path",
-                        DEFAULT_DEMO_PROFILE["qr_code_image_path"],
+                        "university_logo_image_path",
+                        profile.get(
+                            "qr_code_image_path",
+                            DEFAULT_DEMO_PROFILE["university_logo_image_path"],
+                        ),
                     )
                 )
             )
-        if hasattr(self, "spn_demo_qr_image_size"):
-            self.spn_demo_qr_image_size.setValue(
+        if hasattr(self, "spn_demo_university_logo_image_size"):
+            self.spn_demo_university_logo_image_size.setValue(
                 max(
                     80,
                     min(
                         600,
                         int(
                             profile.get(
-                                "qr_code_image_size_px",
-                                DEFAULT_DEMO_PROFILE["qr_code_image_size_px"],
+                                "university_logo_image_size_px",
+                                profile.get(
+                                    "qr_code_image_size_px",
+                                    DEFAULT_DEMO_PROFILE["university_logo_image_size_px"],
+                                ),
                             )
                         ),
                     ),
@@ -6778,12 +6888,15 @@ class ConfigDialog(QDialog):
                     )
                 )
             )
-        if hasattr(self, "txt_demo_qr_website"):
-            self.txt_demo_qr_website.setText(
+        if hasattr(self, "txt_demo_website_url"):
+            self.txt_demo_website_url.setText(
                 str(
                     profile.get(
-                        "qr_website_url",
-                        DEFAULT_DEMO_PROFILE["qr_website_url"],
+                        "website_url",
+                        profile.get(
+                            "qr_website_url",
+                            DEFAULT_DEMO_PROFILE["website_url"],
+                        ),
                     )
                 )
             )
@@ -6805,6 +6918,21 @@ class ConfigDialog(QDialog):
                     )
                 )
             )
+        if hasattr(self, "spn_demo_title_font_size"):
+            self.spn_demo_title_font_size.setValue(
+                max(
+                    10,
+                    min(
+                        96,
+                        int(
+                            profile.get(
+                                "demo_title_font_size_px",
+                                DEFAULT_DEMO_PROFILE["demo_title_font_size_px"],
+                            )
+                        ),
+                    ),
+                )
+            )
         if hasattr(self, "txt_demo_authors"):
             self.txt_demo_authors.setText(
                 str(
@@ -6814,6 +6942,21 @@ class ConfigDialog(QDialog):
                     )
                 )
             )
+        if hasattr(self, "spn_demo_authors_font_size"):
+            self.spn_demo_authors_font_size.setValue(
+                max(
+                    8,
+                    min(
+                        72,
+                        int(
+                            profile.get(
+                                "authors_font_size_px",
+                                DEFAULT_DEMO_PROFILE["authors_font_size_px"],
+                            )
+                        ),
+                    ),
+                )
+            )
         if hasattr(self, "txt_demo_university"):
             self.txt_demo_university.setText(
                 str(
@@ -6821,6 +6964,21 @@ class ConfigDialog(QDialog):
                         "university_text",
                         DEFAULT_DEMO_PROFILE["university_text"],
                     )
+                )
+            )
+        if hasattr(self, "spn_demo_university_font_size"):
+            self.spn_demo_university_font_size.setValue(
+                max(
+                    8,
+                    min(
+                        72,
+                        int(
+                            profile.get(
+                                "university_font_size_px",
+                                DEFAULT_DEMO_PROFILE["university_font_size_px"],
+                            )
+                        ),
+                    ),
                 )
             )
         if hasattr(self, "spn_demo_title_authors_vertical_gap"):
@@ -7906,18 +8064,22 @@ class ConfigDialog(QDialog):
                 self.txt_demo_title.text().strip()
                 or DEFAULT_DEMO_PROFILE["demo_title_text"]
             )
-        if hasattr(self, "txt_demo_qr_image_path"):
-            profile["qr_code_image_path"] = self.txt_demo_qr_image_path.text().strip()
-        if hasattr(self, "spn_demo_qr_image_size"):
-            profile["qr_code_image_size_px"] = int(self.spn_demo_qr_image_size.value())
+        if hasattr(self, "txt_demo_university_logo_image_path"):
+            profile["university_logo_image_path"] = (
+                self.txt_demo_university_logo_image_path.text().strip()
+            )
+        if hasattr(self, "spn_demo_university_logo_image_size"):
+            profile["university_logo_image_size_px"] = int(
+                self.spn_demo_university_logo_image_size.value()
+            )
         if hasattr(self, "txt_demo_icassp_logo_image_path"):
             profile["icassp_logo_image_path"] = (
                 self.txt_demo_icassp_logo_image_path.text().strip()
             )
-        if hasattr(self, "txt_demo_qr_website"):
-            profile["qr_website_url"] = (
-                self.txt_demo_qr_website.text().strip()
-                or DEFAULT_DEMO_PROFILE["qr_website_url"]
+        if hasattr(self, "txt_demo_website_url"):
+            profile["website_url"] = (
+                self.txt_demo_website_url.text().strip()
+                or DEFAULT_DEMO_PROFILE["website_url"]
             )
         if hasattr(self, "txt_demo_icassp_title"):
             profile["icassp_title_text"] = (
@@ -7928,16 +8090,22 @@ class ConfigDialog(QDialog):
             profile["icassp_logo_text_vertical_gap"] = int(
                 self.spn_demo_icassp_logo_text_vertical_gap.value()
             )
+        if hasattr(self, "spn_demo_title_font_size"):
+            profile["demo_title_font_size_px"] = int(self.spn_demo_title_font_size.value())
         if hasattr(self, "txt_demo_authors"):
             profile["authors_text"] = (
                 self.txt_demo_authors.text().strip()
                 or DEFAULT_DEMO_PROFILE["authors_text"]
             )
+        if hasattr(self, "spn_demo_authors_font_size"):
+            profile["authors_font_size_px"] = int(self.spn_demo_authors_font_size.value())
         if hasattr(self, "txt_demo_university"):
             profile["university_text"] = (
                 self.txt_demo_university.text().strip()
                 or DEFAULT_DEMO_PROFILE["university_text"]
             )
+        if hasattr(self, "spn_demo_university_font_size"):
+            profile["university_font_size_px"] = int(self.spn_demo_university_font_size.value())
         if hasattr(self, "spn_demo_title_authors_vertical_gap"):
             profile["title_authors_vertical_gap"] = int(
                 self.spn_demo_title_authors_vertical_gap.value()

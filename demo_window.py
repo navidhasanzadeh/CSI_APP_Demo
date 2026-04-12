@@ -405,7 +405,8 @@ class DemoWindow(QWidget):
         self.title_label.setMargin(0)
         self.title_label.setIndent(0)
         self.title_label.setStyleSheet(
-            "font-size: 22px; font-weight: 700; color: #0b1f3a; margin: 0px; padding: 0px;"
+            f"font-size: {self._demo_title_font_size_px()}px; font-weight: 700; "
+            "color: #0b1f3a; margin: 0px; padding: 0px;"
         )
         title_col.addWidget(self.title_label)
         title_col.addSpacing(max(0, self._title_authors_vertical_gap()))
@@ -418,7 +419,8 @@ class DemoWindow(QWidget):
         self.authors_label.setIndent(0)
         self.authors_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
         self.authors_label.setStyleSheet(self._style_with_negative_gap(
-            "font-size: 12px; font-weight: 600; color: #111827; margin: 0px; padding: 0px;",
+            f"font-size: {self._authors_font_size_px()}px; font-weight: 600; "
+            "color: #111827; margin: 0px; padding: 0px;",
             self._title_authors_vertical_gap(),
         ))
         title_col.addWidget(self.authors_label, alignment=Qt.AlignCenter)
@@ -432,7 +434,8 @@ class DemoWindow(QWidget):
         self.university_label.setIndent(0)
         self.university_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
         self.university_label.setStyleSheet(self._style_with_negative_gap(
-            "font-size: 12px; font-weight: 600; color: #111827; margin: 0px; padding: 0px;",
+            f"font-size: {self._university_font_size_px()}px; font-weight: 600; "
+            "color: #111827; margin: 0px; padding: 0px;",
             self._authors_university_vertical_gap(),
         ))
         title_col.addWidget(self.university_label, alignment=Qt.AlignCenter)
@@ -441,28 +444,22 @@ class DemoWindow(QWidget):
         logo_col = QVBoxLayout()
         logo_col.setSpacing(1)
         logo_col.setAlignment(Qt.AlignRight | Qt.AlignTop)
-        self.qr_placeholder = QLabel(self)
-        qr_size = self._qr_image_size_px()
-        self.qr_placeholder.setFixedSize(qr_size, qr_size)
-        self.qr_placeholder.setAlignment(Qt.AlignCenter)
-        self.qr_placeholder.setFrameStyle(QFrame.Box | QFrame.Plain)
-        self.qr_placeholder.setStyleSheet(
+        self.university_logo_placeholder = QLabel(self)
+        logo_size = self._university_logo_image_size_px()
+        self.university_logo_placeholder.setFixedSize(logo_size, logo_size)
+        self.university_logo_placeholder.setAlignment(Qt.AlignCenter)
+        self.university_logo_placeholder.setFrameStyle(QFrame.Box | QFrame.Plain)
+        self.university_logo_placeholder.setStyleSheet(
             "QLabel {border: 2px dashed #94a3b8; border-radius: 10px; background: #f8fafc; "
             "color: #475569; font-size: 14px; font-weight: 600;}"
         )
-        self._update_qr_placeholder()
-        logo_col.addWidget(self.qr_placeholder, alignment=Qt.AlignRight)
+        self._update_university_logo_placeholder()
+        logo_col.addWidget(self.university_logo_placeholder, alignment=Qt.AlignRight)
 
         self.wirlab_logo_label = QLabel("WIRLab", self)
         self.wirlab_logo_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.wirlab_logo_label.setStyleSheet("font-size: 20px; font-weight: 800; color: #0f5e2b;")
         logo_col.addWidget(self.wirlab_logo_label, alignment=Qt.AlignRight)
-        self.qr_website_label = QLabel(self._qr_website_text(), self)
-        self.qr_website_label.setAlignment(Qt.AlignRight | Qt.AlignTop)
-        self.qr_website_label.setStyleSheet("font-size: 12px; font-weight: 700; color: #2563eb;")
-        self.qr_website_label.setWordWrap(False)
-        self.qr_website_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        logo_col.addWidget(self.qr_website_label, alignment=Qt.AlignRight)
         header_row.addLayout(logo_col, stretch=2)
         root.addLayout(header_row)
 
@@ -580,13 +577,26 @@ class DemoWindow(QWidget):
         button_row.addWidget(self.btn_close)
         button_row.addStretch(1)
         bottom_row.addLayout(button_row)
+        metrics_row = QHBoxLayout()
+        metrics_row.setContentsMargins(0, 0, 0, 0)
+        metrics_row.setSpacing(8)
         self.metrics_status_bar = QLabel(self)
         self.metrics_status_bar.setStyleSheet(
             "QLabel {border: 1px solid #cfd8e3; border-radius: 6px; background: #f8fafc; "
             "color: #1f2937; font-size: 12px; padding: 5px 8px;}"
         )
         self.metrics_status_bar.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        bottom_row.addWidget(self.metrics_status_bar)
+        metrics_row.addWidget(self.metrics_status_bar, stretch=1)
+        self.website_status_label = QLabel(self._website_url_text(), self)
+        self.website_status_label.setStyleSheet(
+            "QLabel {border: 1px solid #cfd8e3; border-radius: 6px; background: #f8fafc; "
+            "color: #2563eb; font-size: 12px; font-weight: 700; padding: 5px 8px;}"
+        )
+        self.website_status_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.website_status_label.setWordWrap(False)
+        self.website_status_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        metrics_row.addWidget(self.website_status_label, stretch=0)
+        bottom_row.addLayout(metrics_row)
         self._refresh_metrics_status_bar()
         self._start_clock_updates()
 
@@ -634,19 +644,51 @@ class DemoWindow(QWidget):
             "Doppler Radiance Fields (DoRF) for Robust Wi-Fi Sensing and Human Activity Recognition"
         )
 
-    def _qr_image_path(self) -> str:
-        return str(self.demo_profile.get("qr_code_image_path") or "").strip()
+    def _university_logo_image_path(self) -> str:
+        return str(
+            self.demo_profile.get("university_logo_image_path")
+            or self.demo_profile.get("qr_code_image_path")
+            or ""
+        ).strip()
 
-    def _qr_website_text(self) -> str:
-        text = str(self.demo_profile.get("qr_website_url") or "").strip()
+    def _website_url_text(self) -> str:
+        text = str(
+            self.demo_profile.get("website_url")
+            or self.demo_profile.get("qr_website_url")
+            or ""
+        ).strip()
         return text or "https://dorf.navidhasanzadeh.com"
 
-    def _qr_image_size_px(self) -> int:
+    def _university_logo_image_size_px(self) -> int:
         try:
-            value = int(self.demo_profile.get("qr_code_image_size_px", 160))
+            value = int(
+                self.demo_profile.get("university_logo_image_size_px")
+                or self.demo_profile.get("qr_code_image_size_px", 160)
+            )
         except (TypeError, ValueError):
             value = 160
         return max(80, min(600, value))
+
+    def _demo_title_font_size_px(self) -> int:
+        try:
+            value = int(self.demo_profile.get("demo_title_font_size_px", 22))
+        except (TypeError, ValueError):
+            value = 22
+        return max(10, min(96, value))
+
+    def _authors_font_size_px(self) -> int:
+        try:
+            value = int(self.demo_profile.get("authors_font_size_px", 12))
+        except (TypeError, ValueError):
+            value = 12
+        return max(8, min(72, value))
+
+    def _university_font_size_px(self) -> int:
+        try:
+            value = int(self.demo_profile.get("university_font_size_px", 12))
+        except (TypeError, ValueError):
+            value = 12
+        return max(8, min(72, value))
 
     def _icassp_logo_image_path(self) -> str:
         return str(self.demo_profile.get("icassp_logo_image_path") or "").strip()
@@ -751,26 +793,30 @@ class DemoWindow(QWidget):
         self.icassp_logo_image_label.setText("")
         self.icassp_logo_image_label.setStyleSheet("border: none;")
 
-    def _update_qr_placeholder(self) -> None:
-        path = self._qr_image_path()
+    def _update_university_logo_placeholder(self) -> None:
+        path = self._university_logo_image_path()
         if path and Path(path).exists():
             pixmap = QPixmap(path)
             if not pixmap.isNull():
-                target_size = self.qr_placeholder.size()
-                self.qr_placeholder.setPixmap(
+                target_size = self.university_logo_placeholder.size()
+                self.university_logo_placeholder.setPixmap(
                     pixmap.scaled(
                         target_size,
                         Qt.KeepAspectRatio,
                         Qt.SmoothTransformation,
                     )
                 )
-                self.qr_placeholder.setText("")
+                self.university_logo_placeholder.setText("")
                 return
         if path:
-            self.qr_placeholder.setText("QR image not found\nSet a valid image path\nin Demo profile")
+            self.university_logo_placeholder.setText(
+                "University logo not found\nSet a valid image path\nin Demo profile"
+            )
         else:
-            self.qr_placeholder.setText("QR code placeholder\nSet image path\nin Demo profile")
-        self.qr_placeholder.setPixmap(QPixmap())
+            self.university_logo_placeholder.setText(
+                "UofT logo placeholder\nSet image path\nin Demo profile"
+            )
+        self.university_logo_placeholder.setPixmap(QPixmap())
 
     def _capture_duration(self) -> float:
         return max(float(self.demo_profile.get("capture_duration_seconds", 5.0)), 1.0)
