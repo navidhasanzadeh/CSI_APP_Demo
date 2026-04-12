@@ -24,6 +24,7 @@ from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtWidgets import (
     QDialog,
     QCheckBox,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QMessageBox,
@@ -367,9 +368,10 @@ class DemoWindow(QWidget):
         root.setContentsMargins(8, 8, 8, 8)
         root.setSpacing(6)
 
-        header_row = QHBoxLayout()
+        header_row = QGridLayout()
         header_row.setContentsMargins(0, 0, 0, 0)
-        header_row.setSpacing(6)
+        header_row.setHorizontalSpacing(6)
+        header_row.setVerticalSpacing(0)
         header_left_col = QVBoxLayout()
         header_left_col.setSpacing(max(0, self._icassp_logo_text_vertical_gap()))
         self.icassp_logo_image_label = QLabel(self)
@@ -394,7 +396,7 @@ class DemoWindow(QWidget):
         ))
         self.icassp_logo_label.setVisible(bool(self._icassp_title_text()))
         header_left_col.addWidget(self.icassp_logo_label)
-        header_row.addLayout(header_left_col, stretch=2)
+        header_row.addLayout(header_left_col, 0, 0)
 
         title_col = QVBoxLayout()
         title_col.setContentsMargins(0, 0, 0, 0)
@@ -440,7 +442,7 @@ class DemoWindow(QWidget):
             self._authors_university_vertical_gap(),
         ))
         title_col.addWidget(self.university_label, alignment=Qt.AlignCenter)
-        header_row.addLayout(title_col, stretch=5)
+        header_row.addLayout(title_col, 0, 1)
 
         logo_col = QVBoxLayout()
         logo_col.setSpacing(1)
@@ -462,7 +464,10 @@ class DemoWindow(QWidget):
         self.wirlab_logo_label.setStyleSheet("font-size: 20px; font-weight: 800; color: #0f5e2b;")
         self.wirlab_logo_label.setVisible(bool(self._wirlab_text()))
         logo_col.addWidget(self.wirlab_logo_label, alignment=Qt.AlignRight)
-        header_row.addLayout(logo_col, stretch=2)
+        header_row.addLayout(logo_col, 0, 2)
+        header_row.setColumnStretch(0, 1)
+        header_row.setColumnStretch(1, 0)
+        header_row.setColumnStretch(2, 1)
         root.addLayout(header_row)
 
         self.status_label = QLabel("Ready for demo capture.", self)
