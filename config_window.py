@@ -405,6 +405,7 @@ DEFAULT_DEMO_PROFILE = {
     "authors_text": "Authors: Navid Hasanzadeh, Shahrokh Valaee",
     "authors_font_size_px": 12,
     "university_text": "University of Toronto",
+    "wirlab_text": "WIRLab",
     "university_font_size_px": 12,
     "title_authors_vertical_gap": 0,
     "authors_university_vertical_gap": 0,
@@ -990,9 +991,8 @@ def _load_demo_profiles_from_csv():
                     or profile["website_url"]
                 ).strip() or DEFAULT_DEMO_PROFILE["website_url"]
                 profile["icassp_title_text"] = (
-                    row.get("icassp_title_text")
-                    or profile["icassp_title_text"]
-                ).strip() or DEFAULT_DEMO_PROFILE["icassp_title_text"]
+                    row.get("icassp_title_text", profile["icassp_title_text"]) or ""
+                ).strip()
                 try:
                     profile["demo_title_font_size_px"] = max(
                         10,
@@ -1037,9 +1037,11 @@ def _load_demo_profiles_from_csv():
                 except (TypeError, ValueError):
                     pass
                 profile["university_text"] = (
-                    row.get("university_text")
-                    or profile["university_text"]
-                ).strip() or DEFAULT_DEMO_PROFILE["university_text"]
+                    row.get("university_text", profile["university_text"]) or ""
+                ).strip()
+                profile["wirlab_text"] = (
+                    row.get("wirlab_text", profile.get("wirlab_text", "WIRLab")) or ""
+                ).strip()
                 try:
                     profile["university_font_size_px"] = max(
                         8,
@@ -2022,6 +2024,7 @@ def save_demo_profiles(profiles: dict):
                 "authors_text",
                 "authors_font_size_px",
                 "university_text",
+                "wirlab_text",
                 "university_font_size_px",
                 "title_authors_vertical_gap",
                 "authors_university_vertical_gap",
@@ -2122,7 +2125,6 @@ def save_demo_profiles(profiles: dict):
                                     DEFAULT_DEMO_PROFILE["icassp_title_text"],
                                 )
                             ).strip()
-                            or DEFAULT_DEMO_PROFILE["icassp_title_text"]
                         ),
                         "icassp_logo_text_vertical_gap": int(
                             profile.get(
@@ -2170,8 +2172,13 @@ def save_demo_profiles(profiles: dict):
                                     DEFAULT_DEMO_PROFILE["university_text"],
                                 )
                             ).strip()
-                            or DEFAULT_DEMO_PROFILE["university_text"]
                         ),
+                        "wirlab_text": str(
+                            profile.get(
+                                "wirlab_text",
+                                DEFAULT_DEMO_PROFILE["wirlab_text"],
+                            )
+                        ).strip(),
                         "university_font_size_px": max(
                             8,
                             min(
@@ -4613,6 +4620,9 @@ class ConfigDialog(QDialog):
         self.txt_demo_university = QLineEdit(self.grp_demo)
         self.txt_demo_university.setPlaceholderText(DEFAULT_DEMO_PROFILE["university_text"])
         form.addRow("University text:", self.txt_demo_university)
+        self.txt_demo_wirlab = QLineEdit(self.grp_demo)
+        self.txt_demo_wirlab.setPlaceholderText(DEFAULT_DEMO_PROFILE["wirlab_text"])
+        form.addRow("WIRLab text:", self.txt_demo_wirlab)
         self.spn_demo_university_font_size = QSpinBox(self.grp_demo)
         self.spn_demo_university_font_size.setRange(8, 72)
         self.spn_demo_university_font_size.setSuffix(" px")
@@ -6864,7 +6874,7 @@ class ConfigDialog(QDialog):
         if hasattr(self, "spn_demo_university_logo_image_size"):
             self.spn_demo_university_logo_image_size.setValue(
                 max(
-                    80,
+                    20,
                     min(
                         600,
                         int(
@@ -6905,7 +6915,7 @@ class ConfigDialog(QDialog):
                 str(
                     profile.get(
                         "icassp_title_text",
-                        DEFAULT_DEMO_PROFILE["icassp_title_text"],
+                        "",
                     )
                 )
             )
@@ -6962,7 +6972,16 @@ class ConfigDialog(QDialog):
                 str(
                     profile.get(
                         "university_text",
-                        DEFAULT_DEMO_PROFILE["university_text"],
+                        "",
+                    )
+                )
+            )
+        if hasattr(self, "txt_demo_wirlab"):
+            self.txt_demo_wirlab.setText(
+                str(
+                    profile.get(
+                        "wirlab_text",
+                        DEFAULT_DEMO_PROFILE["wirlab_text"],
                     )
                 )
             )
@@ -8082,10 +8101,7 @@ class ConfigDialog(QDialog):
                 or DEFAULT_DEMO_PROFILE["website_url"]
             )
         if hasattr(self, "txt_demo_icassp_title"):
-            profile["icassp_title_text"] = (
-                self.txt_demo_icassp_title.text().strip()
-                or DEFAULT_DEMO_PROFILE["icassp_title_text"]
-            )
+            profile["icassp_title_text"] = self.txt_demo_icassp_title.text().strip()
         if hasattr(self, "spn_demo_icassp_logo_text_vertical_gap"):
             profile["icassp_logo_text_vertical_gap"] = int(
                 self.spn_demo_icassp_logo_text_vertical_gap.value()
@@ -8100,10 +8116,9 @@ class ConfigDialog(QDialog):
         if hasattr(self, "spn_demo_authors_font_size"):
             profile["authors_font_size_px"] = int(self.spn_demo_authors_font_size.value())
         if hasattr(self, "txt_demo_university"):
-            profile["university_text"] = (
-                self.txt_demo_university.text().strip()
-                or DEFAULT_DEMO_PROFILE["university_text"]
-            )
+            profile["university_text"] = self.txt_demo_university.text().strip()
+        if hasattr(self, "txt_demo_wirlab"):
+            profile["wirlab_text"] = self.txt_demo_wirlab.text().strip()
         if hasattr(self, "spn_demo_university_font_size"):
             profile["university_font_size_px"] = int(self.spn_demo_university_font_size.value())
         if hasattr(self, "spn_demo_title_authors_vertical_gap"):
